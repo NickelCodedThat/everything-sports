@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens transcribed from docs/BRAND-UI-BLUEPRINT.md section 23.
+ * Per the approved decision #5 (light-default launch), the dark palette
+ * below is defined but not wired to `prefers-color-scheme` — the blueprint
+ * is explicit that automatic dark mode waits for a manual theme control.
+ * Individual Blacktop-surfaced modules (masthead, breaking banner, footer)
+ * opt in explicitly via the `bg-blacktop` utility, not a global toggle.
+ */
+:root {
+  color-scheme: light;
+
+  /* Brand palette */
+  --color-clean-sheet: oklch(1 0 0);
+  --color-replay-gray: oklch(0.958 0.003 106.4);
+  --color-blacktop: oklch(0.155 0.004 285.9);
+  --color-film-gray: oklch(0.448 0.01 286);
+  --color-chalk: oklch(0.881 0.005 106.5);
+  --color-burnt-signal: oklch(0.555 0.155 34.1);
+  --color-deep-signal: oklch(0.478 0.145 33.1);
+  --color-replay-blue: oklch(0.478 0.224 266.4);
+  --color-final-green: oklch(0.512 0.116 157.1);
+  --color-review-amber: oklch(0.547 0.127 61.2);
+  --color-flag-red: oklch(0.5 0.182 29.5);
+
+  /* Semantic reading-surface tokens */
+  --color-canvas: var(--color-clean-sheet);
+  --color-surface: var(--color-replay-gray);
+  --color-ink: var(--color-blacktop);
+  --color-ink-muted: var(--color-film-gray);
+  --color-border: var(--color-chalk);
+  --color-brand: var(--color-burnt-signal);
+  --color-brand-hover: var(--color-deep-signal);
+  --color-accent: var(--color-replay-blue);
+  --color-success: var(--color-final-green);
+  --color-warning: var(--color-review-amber);
+  --color-danger: var(--color-flag-red);
+
+  /* Type families: next/font variables with the blueprint's documented fallbacks */
+  --font-display: var(--font-league-gothic), "Arial Narrow", sans-serif;
+  --font-editorial: var(--font-source-serif-4), Georgia, serif;
+  --font-ui: var(--font-source-sans-3), Arial, sans-serif;
+
+  /* Fluid type scale, section 7 */
+  --text-display-1: clamp(3.25rem, 2.1rem + 5.5vw, 6rem);
+  --text-display-1--line-height: 0.88;
+  --text-display-2: clamp(2.75rem, 2rem + 3.5vw, 5rem);
+  --text-display-2--line-height: 0.92;
+  --text-headline-1: clamp(2.25rem, 1.7rem + 2.4vw, 3.5rem);
+  --text-headline-1--line-height: 1.02;
+  --text-headline-2: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+  --text-headline-2--line-height: 1.08;
+  --text-headline-3: clamp(1.375rem, 1.2rem + 0.8vw, 1.625rem);
+  --text-headline-3--line-height: 1.14;
+  --text-body-lg: clamp(1.125rem, 1.05rem + 0.3vw, 1.25rem);
+  --text-body-lg--line-height: 1.55;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-ui: 0.9375rem;
+  --text-ui--line-height: 1.35;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.35;
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.3;
+
+  --radius-media: 0px;
+  --radius-control: 0.375rem;
+  --radius-panel: 0.5rem;
+  --radius-panel-max: 0.75rem;
+  --radius-pill: 999px;
+
+  --line-hairline: 1px;
+  --line-strong: 2px;
+  --content-max: 90rem;
+  --article-max: 45rem;
+  --gutter: clamp(1rem, 4vw, 4rem);
+
+  --duration-fast: 120ms;
+  --duration-standard: 200ms;
+  --duration-panel: 280ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --z-index-dropdown: 20;
+  --z-index-sticky: 30;
+  --z-index-backdrop: 40;
+  --z-index-modal: 50;
+  --z-index-toast: 60;
+  --z-index-tooltip: 70;
+}
+
+/* Reserved for the future manual dark theme control (blueprint decision #5). Not activated yet. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: oklch(0.155 0.004 285.9);
+  --color-surface: oklch(0.206 0.006 285.9);
+  --color-ink: oklch(1 0 0);
+  --color-ink-muted: oklch(0.784 0.008 286.2);
+  --color-border: oklch(0.327 0.007 286);
+  --color-brand: oklch(0.624 0.166 35.4);
+  --color-accent: oklch(0.732 0.138 269.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-standard: 0ms;
+    --duration-panel: 0ms;
+  }
+}
+
+/* Tailwind v4 theme mapping: exposes the tokens above as utilities (bg-brand, text-ink, font-editorial, etc). */
+@theme inline {
+  --color-clean-sheet: var(--color-clean-sheet);
+  --color-replay-gray: var(--color-replay-gray);
+  --color-blacktop: var(--color-blacktop);
+  --color-film-gray: var(--color-film-gray);
+  --color-chalk: var(--color-chalk);
+  --color-burnt-signal: var(--color-burnt-signal);
+  --color-deep-signal: var(--color-deep-signal);
+  --color-replay-blue: var(--color-replay-blue);
+  --color-final-green: var(--color-final-green);
+  --color-review-amber: var(--color-review-amber);
+  --color-flag-red: var(--color-flag-red);
+
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-border: var(--color-border);
+  --color-brand: var(--color-brand);
+  --color-brand-hover: var(--color-brand-hover);
+  --color-accent: var(--color-accent);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+
+  --font-display: var(--font-display);
+  --font-editorial: var(--font-editorial);
+  --font-ui: var(--font-ui);
+
+  --text-display-1: var(--text-display-1);
+  --text-display-1--line-height: var(--text-display-1--line-height);
+  --text-display-2: var(--text-display-2);
+  --text-display-2--line-height: var(--text-display-2--line-height);
+  --text-headline-1: var(--text-headline-1);
+  --text-headline-1--line-height: var(--text-headline-1--line-height);
+  --text-headline-2: var(--text-headline-2);
+  --text-headline-2--line-height: var(--text-headline-2--line-height);
+  --text-headline-3: var(--text-headline-3);
+  --text-headline-3--line-height: var(--text-headline-3--line-height);
+  --text-body-lg: var(--text-body-lg);
+  --text-body-lg--line-height: var(--text-body-lg--line-height);
+  --text-body: var(--text-body);
+  --text-body--line-height: var(--text-body--line-height);
+  --text-ui: var(--text-ui);
+  --text-ui--line-height: var(--text-ui--line-height);
+  --text-meta: var(--text-meta);
+  --text-meta--line-height: var(--text-meta--line-height);
+  --text-micro: var(--text-micro);
+  --text-micro--line-height: var(--text-micro--line-height);
+
+  --radius-media: var(--radius-media);
+  --radius-control: var(--radius-control);
+  --radius-panel: var(--radius-panel);
+  --radius-panel-max: var(--radius-panel-max);
+  --radius-pill: var(--radius-pill);
+
+  --z-index-dropdown: var(--z-index-dropdown);
+  --z-index-sticky: var(--z-index-sticky);
+  --z-index-backdrop: var(--z-index-backdrop);
+  --z-index-modal: var(--z-index-modal);
+  --z-index-toast: var(--z-index-toast);
+  --z-index-tooltip: var(--z-index-tooltip);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-ui);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-editorial);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -3rem;
+    z-index: var(--z-index-toast);
+    background: var(--color-blacktop);
+    color: var(--color-clean-sheet);
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-control);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: var(--text-ui);
+    transition: top var(--duration-standard) var(--ease-out);
+  }
+
+  .skip-link:focus {
+    top: 1rem;
+  }
+}

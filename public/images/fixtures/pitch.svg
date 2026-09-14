@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg-pitch" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0C0C0E" />
+      <stop offset="65%" stop-color="#161619" />
+      <stop offset="100%" stop-color="#161a1e" />
+    </linearGradient>
+    <linearGradient id="scrim-pitch" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#0C0C0E" stop-opacity="0.85" />
+      <stop offset="45%" stop-color="#0C0C0E" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg-pitch)" />
+  <g>
+    <polygon points="206.66666666666669,1000 326.6666666666667,1000 311.6666666666667,-100 221.66666666666669,-100" fill="#2447D8" opacity="0.06" />
+    <polygon points="453.33333333333337,1000 613.3333333333334,1000 488.33333333333337,-100 578.3333333333334,-100" fill="#2447D8" opacity="0.09" />
+    <polygon points="700,1000 900,1000 845,-100 755,-100" fill="#2447D8" opacity="0.12" />
+    <polygon points="1006.6666666666667,1000 1126.6666666666667,1000 1021.6666666666667,-100 1111.6666666666667,-100" fill="#2447D8" opacity="0.15" />
+    <polygon points="1253.3333333333335,1000 1413.3333333333335,1000 1378.3333333333335,-100 1288.3333333333335,-100" fill="#2447D8" opacity="0.06" />
+  </g>
+  <rect width="1600" height="1000" fill="url(#scrim-pitch)" />
+  <line x1="0" y1="820" x2="1600" y2="820" stroke="#54545A" stroke-opacity="0.35" stroke-width="2" />
+</svg>

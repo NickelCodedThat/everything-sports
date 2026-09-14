@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg-ringside" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0C0C0E" />
+      <stop offset="65%" stop-color="#161619" />
+      <stop offset="100%" stop-color="#19171a" />
+    </linearGradient>
+    <linearGradient id="scrim-ringside" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#0C0C0E" stop-opacity="0.85" />
+      <stop offset="45%" stop-color="#0C0C0E" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg-ringside)" />
+  <g>
+    <polygon points="340,1000 460,1000 465,-100 335,-100" fill="#9E341F" opacity="0.06" />
+    <polygon points="720,1000 880,1000 735,-100 865,-100" fill="#9E341F" opacity="0.09" />
+    <polygon points="1100,1000 1300,1000 1265,-100 1135,-100" fill="#9E341F" opacity="0.12" />
+  </g>
+  <rect width="1600" height="1000" fill="url(#scrim-ringside)" />
+  <line x1="0" y1="820" x2="1600" y2="820" stroke="#54545A" stroke-opacity="0.35" stroke-width="2" />
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg-diamond" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0C0C0E" />
+      <stop offset="65%" stop-color="#161619" />
+      <stop offset="100%" stop-color="#1a1917" />
+    </linearGradient>
+    <linearGradient id="scrim-diamond" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#0C0C0E" stop-opacity="0.85" />
+      <stop offset="45%" stop-color="#0C0C0E" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg-diamond)" />
+  <g>
+    <polygon points="260,1000 380,1000 350,-100 290,-100" fill="#F1F1EF" opacity="0.06" />
+    <polygon points="560,1000 720,1000 610,-100 670,-100" fill="#F1F1EF" opacity="0.09" />
+    <polygon points="860,1000 1060,1000 990,-100 930,-100" fill="#F1F1EF" opacity="0.12" />
+    <polygon points="1220,1000 1340,1000 1250,-100 1310,-100" fill="#F1F1EF" opacity="0.15" />
+  </g>
+  <rect width="1600" height="1000" fill="url(#scrim-diamond)" />
+  <line x1="0" y1="820" x2="1600" y2="820" stroke="#54545A" stroke-opacity="0.35" stroke-width="2" />
+</svg>
