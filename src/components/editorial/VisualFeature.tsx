@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Story } from "@/types/story";
+import { getStoryPath } from "@/lib/routes";
 import { StoryMeta } from "./StoryMeta";
 import { ContentTypeTag } from "@/components/ui/Tag";
 
@@ -18,7 +19,7 @@ export function VisualFeature({ story }: { story: Story }) {
 
   return (
     <Link
-      href={story.sourceUrl}
+      href={getStoryPath(story)}
       className="relative block min-h-[420px] overflow-hidden bg-blacktop md:min-h-[560px]"
     >
       <Image

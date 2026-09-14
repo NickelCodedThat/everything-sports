@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Story } from "@/types/story";
+import { getStoryPath } from "@/lib/routes";
 import { Timestamp } from "@/components/ui/Timestamp";
 import { UrgencyTag } from "@/components/ui/Tag";
 
@@ -15,7 +16,7 @@ export function LiveDevelopingStory({ story }: { story: Story }) {
     <article role="status" className="border border-border p-4">
       <UrgencyTag urgency={badgeUrgency} />
       <h3 className="mt-2 font-editorial text-headline-3 font-bold text-ink">
-        <Link href={story.sourceUrl} className="hover:underline focus-visible:underline">
+        <Link href={getStoryPath(story)} className="hover:underline focus-visible:underline">
           {story.headline}
         </Link>
       </h3>

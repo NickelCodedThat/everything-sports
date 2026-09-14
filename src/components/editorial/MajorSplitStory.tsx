@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Story } from "@/types/story";
+import { getStoryPath } from "@/lib/routes";
 import { StoryImage } from "./StoryImage";
 import { StoryMeta } from "./StoryMeta";
 import { ContentTypeTag, UrgencyTag } from "@/components/ui/Tag";
@@ -16,7 +17,7 @@ export function MajorSplitStory({ story, reverse = false }: MajorSplitStoryProps
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-center md:gap-8">
       <div className={reverse ? "md:order-2" : "md:order-1"}>
         {story.image ? (
-          <Link href={story.sourceUrl} className="block">
+          <Link href={getStoryPath(story)} className="block">
             <StoryImage image={story.image} aspectRatio="4/3" sizes="(min-width: 768px) 50vw, 100vw" />
           </Link>
         ) : null}
@@ -27,7 +28,7 @@ export function MajorSplitStory({ story, reverse = false }: MajorSplitStoryProps
           <ContentTypeTag storyType={story.storyType} />
         </div>
         <h3 className="mt-2 font-editorial text-headline-2 font-bold text-ink">
-          <Link href={story.sourceUrl} className="hover:underline focus-visible:underline">
+          <Link href={getStoryPath(story)} className="hover:underline focus-visible:underline">
             {story.headline}
           </Link>
         </h3>

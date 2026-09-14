@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Story } from "@/types/story";
+import { getStoryPath } from "@/lib/routes";
 import { StoryMeta } from "./StoryMeta";
 import { ContentTypeTag } from "@/components/ui/Tag";
 
@@ -13,7 +14,7 @@ export function AnalysisStory({ story }: { story: Story }) {
     <article className="border-t-2 border-ink pt-4">
       <ContentTypeTag storyType={story.storyType} />
       <h3 className="mt-2 font-editorial text-headline-2 font-bold text-ink">
-        <Link href={story.sourceUrl} className="hover:underline focus-visible:underline">
+        <Link href={getStoryPath(story)} className="hover:underline focus-visible:underline">
           {story.headline}
         </Link>
       </h3>

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import type { Story } from "@/types/story";
+import { getStoryPath } from "@/lib/routes";
 import { Timestamp } from "@/components/ui/Timestamp";
 import { IconButton } from "@/components/ui/IconButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
@@ -28,7 +29,7 @@ export function WireRail({ stories }: { stories: Story[] }) {
             key={story.id}
             className="w-[260px] shrink-0 snap-start border-l-2 border-brand pl-3"
           >
-            <Link href={story.sourceUrl} className="block hover:underline focus-visible:underline">
+            <Link href={getStoryPath(story)} className="block hover:underline focus-visible:underline">
               <span className="text-micro font-bold uppercase tracking-wide text-brand">
                 {story.urgency === "breaking" ? "Breaking" : "Developing"}
               </span>

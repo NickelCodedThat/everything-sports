@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { fixtureStories } from "@/data/stories";
 import { buildHomepage, HOMEPAGE_SECTIONS } from "@/lib/editorial";
+import { getStoryPath } from "@/lib/routes";
 import type { Story } from "@/types/story";
 import { Container } from "@/components/ui/Container";
 import { VisuallyHidden } from "@/components/ui/VisuallyHidden";
@@ -167,7 +168,7 @@ export default function HomePage() {
                   {index + 1}
                 </span>
                 <Link
-                  href={story.sourceUrl}
+                  href={getStoryPath(story)}
                   className="font-editorial text-headline-3 font-semibold text-ink hover:underline focus-visible:underline"
                 >
                   {story.headline}

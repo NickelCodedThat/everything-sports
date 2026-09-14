@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Story } from "@/types/story";
+import { getStoryPath } from "@/lib/routes";
 import { StoryImage } from "./StoryImage";
 import { StoryMeta } from "./StoryMeta";
 import { ContentTypeTag, UrgencyTag } from "@/components/ui/Tag";
@@ -21,7 +22,7 @@ export function LeadPackage({ headline, supporting = [] }: LeadPackageProps) {
         // md:h-full: the grid row stretches to the taller (text) column by default,
         // so the image fills that height instead of leaving dead space under a
         // fixed-ratio crop — see the height precedence note on StoryImage.
-        <Link href={headline.sourceUrl} className="block md:col-span-7 md:h-full">
+        <Link href={getStoryPath(headline)} className="block md:col-span-7 md:h-full">
           <StoryImage
             image={headline.image}
             aspectRatio="4/5"
@@ -41,7 +42,7 @@ export function LeadPackage({ headline, supporting = [] }: LeadPackageProps) {
         </div>
 
         <h3 className="mt-3 font-editorial text-headline-1 font-bold text-ink">
-          <Link href={headline.sourceUrl} className="hover:underline focus-visible:underline">
+          <Link href={getStoryPath(headline)} className="hover:underline focus-visible:underline">
             {headline.headline}
           </Link>
         </h3>
@@ -55,7 +56,7 @@ export function LeadPackage({ headline, supporting = [] }: LeadPackageProps) {
             {supporting.map((story) => (
               <li key={story.id}>
                 <Link
-                  href={story.sourceUrl}
+                  href={getStoryPath(story)}
                   className="font-editorial text-headline-3 font-semibold text-ink hover:underline focus-visible:underline"
                 >
                   {story.headline}

@@ -44,7 +44,8 @@ pnpm test:e2e    # playwright — responsive + accessibility smoke tests (builds
 
 ```
 src/
-  app/                  routes (App Router) — homepage, section stubs, search, icons, robots
+  app/                  routes (App Router) — homepage, section stubs, the story shell
+                          ([sport]/[slug]), search, icons, robots
   components/
     brand/               Wordmark + ES Cut mark (implementation-safe first pass, see below)
     editorial/           story card patterns: LeadPackage, RiverStory, Brief, AnalysisStory,
@@ -58,12 +59,14 @@ src/
                           of React
     news/providers/      NewsProvider contract + the local/mock provider
     ranking/              editorial scoring + sorting, with its own unit tests
+    routes.ts             the internal canonical story path helper (getStoryPath) — see below
     utils/                small helpers (relative time formatting)
   types/                  the domain model: Sport, League, Team/Person refs, NewsSource, Story,
                           StoryCluster, EditorialPriority
 tests/
-  unit/                  vitest specs for ranking and homepage assembly
-  e2e/                    playwright specs for responsive layout and accessible navigation
+  unit/                  vitest specs for ranking, homepage assembly, and story routing
+  e2e/                    playwright specs for responsive layout, accessible navigation, and
+                          story routing/source-attribution
 ```
 
 Domain logic (`lib/`, `types/`, `data/`) has no React dependency, so it's unit-testable in
@@ -92,6 +95,29 @@ Desk, World Game, Across the Board, Most Read), enforcing the blueprint's "no st
 than twice on the homepage" rule via a shared usage tracker. Both modules are covered by
 `tests/unit`.
 
+## Story routing vs. source attribution
+
+Two distinct URLs exist on every `Story`, and the codebase never conflates them:
+
+- **`getStoryPath(story)`** (`src/lib/routes.ts`) — Everything Sports' own canonical route,
+  `/${sport}/${slug}`, served by the story shell at `src/app/[sport]/[slug]/page.tsx`. Every
+  editorial component (LeadPackage, MajorSplitStory, RiverStory, Brief, AnalysisStory,
+  VisualFeature, LiveDevelopingStory, WireRail, and the homepage's Most Read list) links a reader
+  to a headline using this helper — never `story.sourceUrl` directly.
+- **`story.sourceUrl`** — the URL of the original/source publication. For an aggregated story this
+  is always a real external destination (fictional `example.com` paths in the fixtures — never a
+  real publisher, per the copyright rule); for Everything Sports' own original reporting it
+  legitimately equals `getStoryPath(story)`, since we are the source. Fixture data derives both
+  consistently via the `ownUrl`/`externalUrl` helpers in `src/data/stories.ts` rather than hand-typed
+  strings, so they can't drift apart.
+
+The story shell itself is a **lightweight Phase 1 page**, not the future full article/story-cluster
+product (blueprint section 17): headline, deck, tags, byline/timestamp, hero image, and — for
+aggregated stories only — a "Read original reporting at [Source]" action pointing to `sourceUrl`
+(opens in a new tab). Original stories get an honest "full article coming in a later phase" note
+instead of a fabricated body. Every fixture story is statically prerendered
+(`generateStaticParams`); an unmatched sport or slug renders a real `404` via `notFound()`.
+
 ## News provider abstraction
 
 `src/lib/news/providers` defines a `NewsProvider` interface (`fetchStories`) that any future
@@ -118,16 +144,17 @@ later without a layout refactor.
 
 **Built:** application foundation, design tokens, domain model, ranking engine, fixture data
 (37 original fictional stories across all covered sports), news provider abstraction, homepage
-(all 11 sections), responsive navigation (desktop two-row masthead + sticky nav, mobile full-screen
-menu with focus trap), 7 editorial card patterns, accessibility (skip link, landmarks, one `h1`,
-visible focus, 44px touch targets, reduced-motion handling, `role="status"` live regions),
-lightweight section pages for the primary nav destinations so no top-nav link is dead.
+(all 11 sections), a lightweight internal story route (`/[sport]/[slug]`) so every homepage story
+link resolves successfully, responsive navigation (desktop two-row masthead + sticky nav, mobile
+full-screen menu with focus trap), 7 editorial card patterns, accessibility (skip link, landmarks,
+one `h1`, visible focus, 44px touch targets, reduced-motion handling, `role="status"` live
+regions), lightweight section pages for the primary nav destinations so no top-nav link is dead.
 
 **Deferred, by design:**
 
 - Live third-party news ingestion (only the local fixture provider exists)
-- Individual article/story-cluster pages (story links point to real, correctly-shaped URLs that
-  aren't built yet)
+- The full article/story-cluster reading experience (blueprint section 17) — the current story
+  route is an intentionally lightweight Phase 1 shell, not that product
 - Full search (the search dialog is honest about this — it submits to `/search`, which
   acknowledges the query rather than faking results)
 - Auth, accounts, paywall, subscriptions, Supabase, monetization

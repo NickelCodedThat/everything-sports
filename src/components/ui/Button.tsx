@@ -40,3 +40,26 @@ export function ButtonLink({ variant = "primary", className = "", href, ...props
     />
   );
 }
+
+/**
+ * Same visual contract, for a genuinely external destination (e.g. an
+ * aggregated story's source publication). Renders a plain `<a>` rather than
+ * next/link since there's nothing to client-route to, and opens in a new
+ * tab so the reader doesn't lose their place on Everything Sports.
+ */
+export function ExternalButtonLink({
+  variant = "primary",
+  className = "",
+  href,
+  ...props
+}: ButtonLinkProps) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex items-center justify-center ${VARIANT_CLASS[variant]} transition-colors duration-[var(--duration-fast)] ${className}`}
+      {...props}
+    />
+  );
+}

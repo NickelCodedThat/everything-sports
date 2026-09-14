@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Story } from "@/types/story";
+import { getStoryPath } from "@/lib/routes";
 import { StoryImage } from "./StoryImage";
 import { StoryMeta } from "./StoryMeta";
 import { ContentTypeTag, UrgencyTag } from "@/components/ui/Tag";
@@ -14,7 +15,7 @@ export function RiverStory({ story }: { story: Story }) {
           <ContentTypeTag storyType={story.storyType} />
         </div>
         <h3 className="mt-1 font-editorial text-headline-3 font-semibold text-ink">
-          <Link href={story.sourceUrl} className="hover:underline focus-visible:underline">
+          <Link href={getStoryPath(story)} className="hover:underline focus-visible:underline">
             {story.headline}
           </Link>
         </h3>
@@ -23,7 +24,7 @@ export function RiverStory({ story }: { story: Story }) {
       </div>
 
       {story.image ? (
-        <Link href={story.sourceUrl} className="block w-[104px] shrink-0">
+        <Link href={getStoryPath(story)} className="block w-[104px] shrink-0">
           <StoryImage image={story.image} aspectRatio="4/3" sizes="104px" className="rounded-[4px]" />
         </Link>
       ) : null}
