@@ -1,20 +1,39 @@
 import type { Sport } from "@/types/sport";
-import type { Story } from "@/types/story";
+import type { Freshness } from "../policy/types";
+import type { NewsCandidate, NewsProviderId } from "../candidates/types";
 
-export interface NewsProviderQuery {
-  sport?: Sport;
-  limit?: number;
+export interface FetchCandidatesOptions {
+  /** A single sport's query profile, or "all" to run every profile this provider supports. */
+  sport: Sport | "all";
+  /** Raw duration string, e.g. "3h", "24h" — each provider interprets it in its own API's terms. */
+  window: string;
+  /** Applied per query profile, not per overall batch. */
+  limit: number;
+}
+
+export interface CandidateProviderResult {
+  providerId: NewsProviderId;
+  candidates: NewsCandidate[];
+  status: "ok" | "unavailable" | "error";
+  /** Human-readable context for "unavailable"/"error" (e.g. "missing NEWSDATA_API_KEY"), or partial-failure notes on "ok". */
+  message?: string;
+  durationMs: number;
 }
 
 /**
- * Contract every ingestion source must satisfy. Each provider is responsible
- * for fetching from its own vendor shape and normalizing into the canonical
- * `Story` type before returning, so nothing downstream ever couples to one
- * vendor's schema. Phase 1 ships only `LocalNewsProvider`; RSS/API providers
- * implement this same interface later without touching the rest of the app.
+ * Contract every candidate-discovery source must satisfy. This replaces the
+ * Phase 1 `NewsProvider` (which produced finished `Story` objects directly —
+ * skipping normalize/classify/dedupe/cluster/rank/editorial entirely, which
+ * this newsroom pipeline no longer allows). Providers are NOT assumed to
+ * have identical capabilities — `requiresApiKey` and `expectedFreshness` are
+ * real, inspectable differences a caller (the aggregator, the CLI) should
+ * account for, e.g. never letting a delayed provider outrank a fresher one
+ * for the same event.
  */
-export interface NewsProvider {
-  id: string;
-  name: string;
-  fetchStories(query?: NewsProviderQuery): Promise<Story[]>;
+export interface CandidateProvider {
+  id: NewsProviderId;
+  displayName: string;
+  requiresApiKey: boolean;
+  expectedFreshness: Freshness;
+  fetchCandidates(options: FetchCandidatesOptions): Promise<CandidateProviderResult>;
 }

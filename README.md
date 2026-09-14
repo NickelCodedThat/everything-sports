@@ -4,9 +4,12 @@ A premium, 24/7 sports news publication — basketball leads, football runs a cl
 anchors a strong third, and the rest of the sports world gets serious treatment when the moment
 earns it. Free to read, no accounts, no paywall.
 
-This repository is the **Phase 1 vertical slice**: application foundation, brand/design system,
-editorial domain model, a ranking engine, realistic fixture data, and a fully composed homepage.
-There is no live news ingestion yet — see [Scope](#phase-1-scope) below.
+Phase 1 built the application foundation, brand/design system, editorial domain model, ranking
+engine, fixture data, and a fully composed homepage. Phase 3 adds a **newsroom intake layer** —
+real, live sports-news discovery from free sources — as a CLI/dev-only tool, entirely separate from
+the public homepage, which still reads only the Phase 1 fixture data. See
+[Phase 1 scope](#phase-1-scope) and [Newsroom](#newsroom-phase-3-multi-source-candidate-discovery)
+below.
 
 The full visual and editorial specification lives at
 [`docs/BRAND-UI-BLUEPRINT.md`](docs/BRAND-UI-BLUEPRINT.md). Treat it as canonical.
@@ -30,14 +33,19 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+To enable the NewsData newsroom provider (optional — GDELT works with no key), copy `.env.example`
+to `.env.local` and set `NEWSDATA_API_KEY`. Without it, `pnpm news:probe` reports NewsData as
+cleanly unavailable rather than failing.
+
 ### Quality gates
 
 ```bash
 pnpm typecheck   # tsc --noEmit
 pnpm lint        # eslint
-pnpm test        # vitest — domain/ranking/homepage-assembly unit tests
+pnpm test        # vitest — domain/ranking/homepage-assembly/newsroom unit tests (no network)
 pnpm build       # next build — production build + static generation
 pnpm test:e2e    # playwright — responsive + accessibility smoke tests (builds and boots the app)
+pnpm news:probe  # live newsroom CLI — see "Newsroom" below; not part of the automated test suite
 ```
 
 ## Project structure
@@ -45,7 +53,7 @@ pnpm test:e2e    # playwright — responsive + accessibility smoke tests (builds
 ```
 src/
   app/                  routes (App Router) — homepage, section stubs, the story shell
-                          ([sport]/[slug]), search, icons, robots
+                          ([sport]/[slug]), search, icons, robots, dev/newsroom (dev-only)
   components/
     brand/               Wordmark + ES Cut mark (implementation-safe first pass, see below)
     editorial/           story card patterns: LeadPackage, RiverStory, Brief, AnalysisStory,
@@ -53,18 +61,31 @@ src/
     navigation/          Header, MobileMenu, MoreMenu, SearchDialog
     layout/              Footer, Container, SectionStub
     ui/                  Button, Tag, IconButton, Timestamp, icons, VisuallyHidden
-  data/                  typed fixture data: sources, teams, people, stories
+  data/                  typed fixture data: sources, teams, people, stories (unchanged this phase)
   lib/
     editorial/           homepage section-assembly (buildHomepage) and usage-tracking, independent
                           of React
-    news/providers/      NewsProvider contract + the local/mock provider
+    news/                the Phase 3 newsroom — see docs/NEWS-SOURCE-STRATEGY.md
+      candidates/          NewsCandidate type + fingerprinting
+      providers/           CandidateProvider contract; gdelt/, newsdata/, local/ implementations
+      classification/      deterministic sport classification
+      normalization/       shared candidate-building/validation used by every provider
+      policy/              the provider-policy registry
+      queries/             provider-agnostic per-sport query term profiles
+      urls/                URL normalization (tracking-param stripping, etc.)
+      cli/                 pnpm news:probe's argument parsing + report formatting
+      newsroom.ts           the multi-provider aggregator
     ranking/              editorial scoring + sorting, with its own unit tests
     routes.ts             the internal canonical story path helper (getStoryPath) — see below
     utils/                small helpers (relative time formatting)
   types/                  the domain model: Sport, League, Team/Person refs, NewsSource, Story,
                           StoryCluster, EditorialPriority
+scripts/
+  news-probe.ts          the pnpm news:probe CLI entry point (runs via tsx, outside Next.js)
 tests/
-  unit/                  vitest specs for ranking, homepage assembly, and story routing
+  unit/                  vitest specs — ranking, homepage assembly, story routing, and
+                          tests/unit/news/ (newsroom: providers, classification, policy, CLI args —
+                          all mocked, no network)
   e2e/                    playwright specs for responsive layout, accessible navigation, and
                           story routing/source-attribution
 ```
@@ -118,13 +139,26 @@ aggregated stories only — a "Read original reporting at [Source]" action point
 instead of a fabricated body. Every fixture story is statically prerendered
 (`generateStaticParams`); an unmatched sport or slug renders a real `404` via `notFound()`.
 
-## News provider abstraction
+## Newsroom (Phase 3): multi-source candidate discovery
 
-`src/lib/news/providers` defines a `NewsProvider` interface (`fetchStories`) that any future
-ingestion source — RSS, a paid news API, ESPN, whatever — implements independently, always
-normalizing into the canonical `Story` type before returning. Phase 1 ships one provider,
-`localNewsProvider`, backed by the typed fixtures in `src/data`. Nothing in the product is coupled
-to a specific vendor.
+`src/lib/news` is the newsroom intake layer — real sports-news *discovery*, kept deliberately
+separate from the production homepage (which still reads only `src/data/stories.ts`; this phase
+does not touch it). Full strategy, provider policy, and rationale:
+[`docs/NEWS-SOURCE-STRATEGY.md`](docs/NEWS-SOURCE-STRATEGY.md).
+
+In short: a `CandidateProvider` (`src/lib/news/providers/types.ts`) fetches raw results from one
+source and normalizes them into a provider-neutral `NewsCandidate`
+(`src/lib/news/candidates/types.ts`) — headline, publisher, source URL, timestamps, classification;
+never a full article body. GDELT DOC 2.0 (`providers/gdelt`) and NewsData.io
+(`providers/newsdata`, requires `NEWSDATA_API_KEY`) are the two approved live providers; an offline
+`local` provider (`providers/local`) exercises the same pipeline against fixture data with no
+network call. The aggregator (`newsroom.ts`) queries multiple providers in parallel, keeps one
+provider's failure from erasing another's results, and flags exact-URL duplicates.
+
+Inspect it with the CLI — `pnpm news:probe` (see the strategy doc for flags) — or, in `next dev`
+only, at `/dev/newsroom` (guarded to 404 outside development; not linked from navigation).
+`NewsCandidate → Story` (classification refinement, real deduplication, clustering, ranking
+integration, editorial review) is future-phase work.
 
 ## Brand implementation
 
@@ -162,6 +196,19 @@ regions), lightweight section pages for the primary nav destinations so no top-n
 - Broad section-page builds beyond the primary nav's lightweight stubs
 - A true desktop side-by-side Lead+Now rail above 1180px (blueprint section 13); Now currently
   renders as its own full-width section at every breakpoint
+
+## Phase 3 scope
+
+**Built:** the newsroom candidate pipeline described above — `NewsCandidate` model, GDELT and
+NewsData providers (policy-approved, see the strategy doc), a provider-policy registry covering six
+providers total, deterministic sport classification, URL normalization + fingerprinting + exact-URL
+duplicate flagging, the multi-provider aggregator, the `pnpm news:probe` CLI, and an optional
+dev-only `/dev/newsroom` preview.
+
+**Explicitly not built** (see the scope hold in `docs/NEWS-SOURCE-STRATEGY.md` §13): the public
+homepage still reads only fixture data — no real candidate has reached it. No database, no
+persistent ingestion, no scheduler/cron, no story clustering beyond exact-URL duplicate flags, no
+AI summaries, no editor CMS, no search indexing, no accounts/auth/paywall/advertising/analytics.
 
 ## Images
 
