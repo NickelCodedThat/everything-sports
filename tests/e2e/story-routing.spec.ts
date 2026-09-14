@@ -6,9 +6,13 @@ import { expect, test } from "@playwright/test";
  * expose a clear, correct outbound action to its actual external source.
  */
 test.describe("story routing", () => {
-  test("a homepage lead/headline link resolves to a real, non-404 story route", async ({ page }) => {
+  test("a homepage lead/headline link resolves to a real, non-404 story route", async ({
+    page,
+  }) => {
     await page.goto("/");
-    const leadHeadlineLink = page.locator('section[aria-labelledby="section-lead"] h3 a').first();
+    const leadHeadlineLink = page
+      .locator('section[aria-labelledby="section-lead"] h3 a')
+      .first();
     const href = await leadHeadlineLink.getAttribute("href");
     expect(href).toMatch(/^\/[a-z]+\/[a-z0-9-]+$/);
 
@@ -22,13 +26,17 @@ test.describe("story routing", () => {
   test("an aggregated story route renders and links out to its real external source", async ({
     page,
   }) => {
-    const response = await page.goto("/basketball/marcus-devereaux-knee-injury");
+    const response = await page.goto(
+      "/basketball/marcus-devereaux-knee-injury",
+    );
     expect(response?.status()).toBeLessThan(400);
 
     await expect(page.locator("h1")).toContainText("Marcus Devereaux");
     await expect(page.getByText(/This reporting originated at/)).toBeVisible();
 
-    const outboundLink = page.getByRole("link", { name: /Read original reporting at/ });
+    const outboundLink = page.getByRole("link", {
+      name: /Read the full story at/,
+    });
     await expect(outboundLink).toBeVisible();
     const outboundHref = await outboundLink.getAttribute("href");
     expect(outboundHref).toMatch(/^https:\/\/example\.com\//);
@@ -39,10 +47,15 @@ test.describe("story routing", () => {
   test("an original story route renders without an outbound source action or a fabricated body", async ({
     page,
   }) => {
-    const response = await page.goto("/basketball/ironline-trade-for-elias-kovac");
+    const response = await page.goto(
+      "/basketball/ironline-trade-for-elias-kovac",
+    );
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("h1")).toContainText("Ironline Trade");
-    await expect(page.getByRole("link", { name: /Read original reporting at/ })).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: /Read the full story at/ }),
+    ).toHaveCount(0);
+    await expect(page.getByText("Story preview")).toBeVisible();
   });
 
   test("an unknown story slug returns a real 404", async ({ page }) => {

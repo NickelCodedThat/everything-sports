@@ -14,31 +14,32 @@ interface ESCutMarkProps {
 }
 
 /**
- * Implementation-safe first pass of the ES Cut compact mark (blueprint
- * section 4): a continuous rectangular "E" path on a 12x12 grid with a
- * notch cut through the middle bar. This is a geometric approximation, not
- * JD's hand-tuned optical variants — swap the `<path>` below when those
- * arrive, the surrounding component contract (size/tone) should not need
- * to change.
+ * ES Cut compact mark (blueprint section 4). The E and S share their center
+ * bar so the silhouette reads as a publication stamp first and a monogram
+ * second. Two-unit strokes and open counters hold at favicon size.
  */
-export function ESCutMark({ tone = "ink", size = 24, className = "", title }: ESCutMarkProps) {
+export function ESCutMark({
+  tone = "ink",
+  size = 24,
+  className = "",
+  title,
+}: ESCutMarkProps) {
   const textClass = TONE_TEXT[tone];
 
   return (
     <svg
-      viewBox="0 0 12 12"
-      width={size}
+      viewBox="0 0 14 12"
+      width={(size * 7) / 6}
       height={size}
       className={`${textClass} ${className}`}
       role={title ? "img" : "presentation"}
       aria-hidden={title ? undefined : true}
+      shapeRendering="geometricPrecision"
     >
       {title ? <title>{title}</title> : null}
       <path
         fill="currentColor"
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M1 1H11V3H3V5H9V7H3V9H11V11H1V1Z"
+        d="M0 0H6V2H2V5H6V7H2V10H6V12H0V0ZM6 0H14V2H8V5H14V12H6V10H12V7H6V0Z"
       />
     </svg>
   );

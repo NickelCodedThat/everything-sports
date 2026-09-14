@@ -74,9 +74,14 @@ export function MobileMenu({ open, onClose, activeHref }: MobileMenuProps) {
       aria-label="Site menu"
       className="fixed inset-0 z-modal flex flex-col bg-canvas"
     >
-      <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <ESCutMark tone="ink" size={28} title="Everything Sports" />
-        <IconButton ref={closeButtonRef} label="Close menu" onClick={onClose}>
+      <div className="flex h-14 items-center justify-between border-b-2 border-brand bg-blacktop px-4">
+        <ESCutMark tone="reversed" size={26} title="Everything Sports" />
+        <IconButton
+          tone="reversed"
+          ref={closeButtonRef}
+          label="Close menu"
+          onClick={onClose}
+        >
           <CloseIcon />
         </IconButton>
       </div>

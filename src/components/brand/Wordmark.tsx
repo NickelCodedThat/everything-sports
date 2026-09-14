@@ -14,31 +14,44 @@ interface WordmarkProps {
 }
 
 /**
- * Implementation-safe first pass of the Full Bleed wordmark (blueprint
- * section 3). This is deliberately plain League Gothic typography rather
- * than custom-drawn letterforms — JD has not yet delivered production
- * vectors. Isolated here so the hand-tuned mark can drop in later without a
- * layout refactor.
+ * Full Bleed web wordmark. The coral splice is a compact edit/broadcast cue
+ * shared by every lockup, giving the typeset stage-two identity a repeatable
+ * signature without pretending it is the final custom-drawn trademark.
  */
-export function Wordmark({ variant = "horizontal", tone = "ink", className = "" }: WordmarkProps) {
+export function Wordmark({
+  variant = "horizontal",
+  tone = "ink",
+  className = "",
+}: WordmarkProps) {
   const textClass = TONE_TEXT[tone];
 
   if (variant === "stacked") {
     return (
       <span
-        className={`font-display uppercase leading-[0.92] tracking-[-0.02em] ${textClass} ${className}`}
+        className={`inline-flex flex-col font-display uppercase leading-[0.84] tracking-[-0.02em] ${textClass} ${className}`}
       >
         <span className="block text-[1em]">Everything</span>
-        <span className="block text-[1em]">Sports</span>
+        <span className="mt-[0.1em] inline-flex items-center text-[1em]">
+          <span
+            aria-hidden="true"
+            className="mr-[0.13em] h-[0.62em] w-[0.1em] bg-brand"
+          />
+          Sports
+        </span>
       </span>
     );
   }
 
   return (
     <span
-      className={`font-display uppercase leading-none tracking-[-0.02em] whitespace-nowrap ${textClass} ${className}`}
+      className={`inline-flex items-center whitespace-nowrap font-display uppercase leading-none tracking-[-0.02em] ${textClass} ${className}`}
     >
-      Everything Sports
+      <span>Everything</span>
+      <span
+        aria-hidden="true"
+        className="mx-[0.13em] h-[0.64em] w-[0.09em] bg-brand"
+      />
+      <span>Sports</span>
     </span>
   );
 }

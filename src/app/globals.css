@@ -206,6 +206,22 @@
 }
 
 @layer components {
+  .story-image {
+    aspect-ratio: var(--story-aspect);
+  }
+
+  @media (min-width: 48rem) {
+    .lead-story-image {
+      aspect-ratio: 16 / 5;
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .lead-story-image {
+      aspect-ratio: 16 / 10;
+    }
+  }
+
   .skip-link {
     position: absolute;
     left: 1rem;

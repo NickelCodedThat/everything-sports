@@ -41,15 +41,33 @@ test.describe("homepage", () => {
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
   });
 
-  test("primary nav links are reachable and go somewhere real", async ({ page }) => {
+  test("The Lead image never overlaps its editorial column", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+
+    const lead = page.locator('section[aria-labelledby="section-lead"]');
+    const imageBox = await lead.locator("figure").boundingBox();
+    const copyBox = await lead.locator("h3").locator("..").boundingBox();
+
+    expect(imageBox).not.toBeNull();
+    expect(copyBox).not.toBeNull();
+    expect(imageBox!.x + imageBox!.width).toBeLessThanOrEqual(copyBox!.x);
+  });
+
+  test("primary nav links are reachable and go somewhere real", async ({
+    page,
+  }) => {
     await page.goto("/");
     // The desktop nav landmark is hidden at mobile widths (the mobile menu
     // carries the same links instead), so check the footer's copy, which is
     // always present, rather than assuming which nav is visible.
-    await expect(page.getByRole("navigation", { name: "Footer sections" }).getByRole("link", { name: "Basketball" })).toHaveAttribute(
-      "href",
-      "/basketball",
-    );
+    await expect(
+      page
+        .getByRole("navigation", { name: "Footer sections" })
+        .getByRole("link", { name: "Basketball" }),
+    ).toHaveAttribute("href", "/basketball");
 
     const response = await page.goto("/basketball");
     expect(response?.status()).toBeLessThan(400);
@@ -75,7 +93,9 @@ test.describe("mobile navigation", () => {
     const box = await dialog.boundingBox();
     expect(box?.width).toBeGreaterThan(300);
 
-    await expect(dialog.getByRole("link", { name: "Basketball" })).toBeVisible();
+    await expect(
+      dialog.getByRole("link", { name: "Basketball" }),
+    ).toBeVisible();
 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -96,5 +116,28 @@ test.describe("mobile navigation", () => {
 
     await page.getByRole("button", { name: "Open search" }).click();
     await expect(searchInput).toBeFocused();
+  });
+
+  test("search locks scroll, traps focus, and restores its trigger", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const trigger = page.getByRole("button", { name: "Open search" });
+    await trigger.click();
+
+    const dialog = page.getByRole("dialog", { name: "Search" });
+    await expect(dialog).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => document.body.style.overflow))
+      .toBe("hidden");
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(
+      dialog.getByRole("button", { name: "Close search" }),
+    ).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 });

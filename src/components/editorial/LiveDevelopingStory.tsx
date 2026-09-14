@@ -13,10 +13,13 @@ export function LiveDevelopingStory({ story }: { story: Story }) {
   const badgeUrgency = story.urgency !== "none" ? story.urgency : "developing";
 
   return (
-    <article role="status" className="border border-border p-4">
+    <article role="status" className="border-t-2 border-brand py-4">
       <UrgencyTag urgency={badgeUrgency} />
       <h3 className="mt-2 font-editorial text-headline-3 font-bold text-ink">
-        <Link href={getStoryPath(story)} className="hover:underline focus-visible:underline">
+        <Link
+          href={getStoryPath(story)}
+          className="hover:underline focus-visible:underline"
+        >
           {story.headline}
         </Link>
       </h3>

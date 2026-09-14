@@ -17,11 +17,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <Container className="py-12 md:py-16">
-      <h1 className="font-display text-4xl uppercase tracking-tight text-ink">Search</h1>
+      <h1 className="font-display text-4xl uppercase tracking-tight text-ink">
+        Search
+      </h1>
       <p className="mt-2 max-w-2xl text-body-lg text-ink-muted">
         {q
-          ? `Search isn't live yet, so we couldn't look up "${q}". Full search is coming in a later phase.`
-          : "Search is coming in a later phase."}
+          ? `Search for “${q}” is not available in this preview. Browse the latest stories or choose a sport from the navigation.`
+          : "Search is being prepared for launch. Browse the latest stories or choose a sport from the navigation."}
       </p>
     </Container>
   );

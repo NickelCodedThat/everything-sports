@@ -35,7 +35,9 @@ function isSport(value: string): value is Sport {
 
 function findStory(sport: string, slug: string): Story | undefined {
   if (!isSport(sport)) return undefined;
-  return fixtureStories.find((story) => story.sport === sport && story.slug === slug);
+  return fixtureStories.find(
+    (story) => story.sport === sport && story.slug === slug,
+  );
 }
 
 /**
@@ -44,10 +46,15 @@ function findStory(sport: string, slug: string): Story | undefined {
  * (and 404 via `findStory` below) rather than failing outright.
  */
 export function generateStaticParams() {
-  return fixtureStories.map((story) => ({ sport: story.sport, slug: story.slug }));
+  return fixtureStories.map((story) => ({
+    sport: story.sport,
+    slug: story.slug,
+  }));
 }
 
-export async function generateMetadata({ params }: StoryPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: StoryPageProps): Promise<Metadata> {
   const { sport, slug } = await params;
   const story = findStory(sport, slug);
   if (!story) return { title: "Story not found" };
@@ -79,12 +86,18 @@ export default async function StoryPage({ params }: StoryPageProps) {
         </Link>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          {story.urgency !== "none" ? <UrgencyTag urgency={story.urgency} /> : null}
+          {story.urgency !== "none" ? (
+            <UrgencyTag urgency={story.urgency} />
+          ) : null}
           <ContentTypeTag storyType={story.storyType} />
         </div>
 
-        <h1 className="mt-3 font-editorial text-headline-1 font-bold text-ink">{story.headline}</h1>
-        <p className="mt-4 font-editorial text-body-lg text-ink-muted">{story.deck}</p>
+        <h1 className="mt-3 font-editorial text-headline-1 font-bold text-ink">
+          {story.headline}
+        </h1>
+        <p className="mt-4 font-editorial text-body-lg text-ink-muted">
+          {story.deck}
+        </p>
         <StoryMeta story={story} className="mt-4" />
 
         {story.image ? (
@@ -98,21 +111,34 @@ export default async function StoryPage({ params }: StoryPageProps) {
           />
         ) : null}
 
-        <div className="mt-8 border-t border-border pt-6">
+        <div className="mt-8 border-t-2 border-ink pt-6">
           {story.originality === "aggregated" ? (
             <>
-              <p className="text-body text-ink-muted">
-                This reporting originated at {story.source.name}, not Everything Sports.
+              <p className="text-meta font-bold uppercase tracking-wide text-ink">
+                Reporting from {story.source.name}
+              </p>
+              <p className="mt-2 max-w-xl text-body text-ink-muted">
+                This reporting originated at {story.source.name}, not Everything
+                Sports. Continue to the publisher for the complete story.
               </p>
               <ExternalButtonLink href={story.sourceUrl} className="mt-4">
-                Read original reporting at {story.source.name}
+                Read the full story at {story.source.name}
+                <span aria-hidden="true" className="ml-2">
+                  ↗
+                </span>
+                <span className="sr-only"> (opens in a new tab)</span>
               </ExternalButtonLink>
             </>
           ) : (
-            <p className="font-editorial text-body italic text-ink-muted">
-              This is Everything Sports original reporting. The full article is coming in a later
-              phase.
-            </p>
+            <>
+              <p className="text-meta font-bold uppercase tracking-wide text-ink">
+                Story preview
+              </p>
+              <p className="mt-2 max-w-xl font-editorial text-body text-ink-muted">
+                This is an Everything Sports original. Full reporting is not
+                available in this preview.
+              </p>
+            </>
           )}
         </div>
       </Container>

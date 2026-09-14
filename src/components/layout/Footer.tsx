@@ -18,18 +18,24 @@ export function Footer() {
             <Wordmark className="text-2xl" />
           </Link>
           <p className="mt-4 max-w-sm text-body text-ink-muted">
-            The whole sports conversation, edited with a point of view. Basketball leads, football
-            runs close behind, baseball anchors the third pillar, and the rest gets serious
-            treatment when the moment earns it.
+            The whole sports conversation, edited with a point of view.
+            Basketball leads, football runs close behind, baseball anchors the
+            third pillar, and the rest gets serious treatment when the moment
+            earns it.
           </p>
         </div>
 
         <nav aria-label="Footer sections" className="md:col-span-3">
-          <p className="text-meta font-semibold uppercase tracking-wide text-ink-muted">Sections</p>
+          <p className="text-meta font-semibold uppercase tracking-wide text-ink-muted">
+            Sections
+          </p>
           <ul className="mt-3 space-y-2">
             {PRIMARY_NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="text-ui text-ink hover:underline focus-visible:underline">
+                <Link
+                  href={item.href}
+                  className="text-ui text-ink hover:underline focus-visible:underline"
+                >
                   {item.label}
                 </Link>
               </li>
@@ -42,7 +48,8 @@ export function Footer() {
             The Morning Wire
           </p>
           <p className="mt-3 max-w-sm text-body text-ink-muted">
-            Our daily newsletter is coming soon. Check back once it&rsquo;s live.
+            Our daily newsletter is coming soon. Check back once it&rsquo;s
+            live.
           </p>
         </div>
       </Container>
@@ -50,7 +57,8 @@ export function Footer() {
       <div className="border-t border-border py-6">
         <Container>
           <p className="text-meta text-ink-muted">
-            &copy; {new Date().getFullYear()} Everything Sports. Demo build — Phase 1.
+            &copy; {new Date().getFullYear()} Everything Sports. Independent
+            sports coverage.
           </p>
         </Container>
       </div>

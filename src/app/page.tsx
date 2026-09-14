@@ -53,7 +53,10 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="border-t border-border py-12 md:py-16">
+    <section
+      aria-labelledby={id}
+      className="border-t border-border py-12 md:py-16"
+    >
       <Container>
         <SectionHeading meta={meta} id={id} />
         <div className="mt-6">{children}</div>
@@ -63,7 +66,13 @@ function Section({
 }
 
 /** Sport package: one alternating-orientation feature story plus a compact mixed-format list. */
-function SportPackage({ stories, reverse }: { stories: Story[]; reverse?: boolean }) {
+function SportPackage({
+  stories,
+  reverse,
+}: {
+  stories: Story[];
+  reverse?: boolean;
+}) {
   const [feature, ...rest] = stories;
   if (!feature) return null;
   return (
@@ -81,11 +90,12 @@ export default function HomePage() {
     <>
       <h1>
         <VisuallyHidden>
-          Everything Sports — the whole sports conversation, edited with a point of view
+          Everything Sports — the whole sports conversation, edited with a point
+          of view
         </VisuallyHidden>
       </h1>
 
-      <section aria-labelledby="section-wire" className="py-8 md:py-12">
+      <section aria-labelledby="section-wire" className="py-6 md:py-8">
         <Container>
           <SectionHeading meta={HOMEPAGE_SECTIONS.WIRE} id="section-wire" />
           <div className="mt-4">
@@ -95,11 +105,17 @@ export default function HomePage() {
       </section>
 
       {homepage.lead ? (
-        <section aria-labelledby="section-lead" className="border-t border-border py-12 md:py-16">
+        <section
+          aria-labelledby="section-lead"
+          className="border-t border-border py-10 md:py-12"
+        >
           <Container>
             <SectionHeading meta={HOMEPAGE_SECTIONS.LEAD} id="section-lead" />
             <div className="mt-6">
-              <LeadPackage headline={homepage.lead.headline} supporting={homepage.lead.supporting} />
+              <LeadPackage
+                headline={homepage.lead.headline}
+                supporting={homepage.lead.supporting}
+              />
             </div>
           </Container>
         </section>
@@ -122,7 +138,10 @@ export default function HomePage() {
       ) : null}
 
       {homepage.cut ? (
-        <section aria-labelledby="section-cut" className="border-t border-border py-12 md:py-16">
+        <section
+          aria-labelledby="section-cut"
+          className="border-t border-border py-12 md:py-16"
+        >
           <Container>
             <SectionHeading meta={HOMEPAGE_SECTIONS.CUT} id="section-cut" />
           </Container>
@@ -151,7 +170,10 @@ export default function HomePage() {
       ) : null}
 
       {homepage.acrossTheBoard.length > 0 ? (
-        <Section id="section-across-the-board" meta={HOMEPAGE_SECTIONS.ACROSS_THE_BOARD}>
+        <Section
+          id="section-across-the-board"
+          meta={HOMEPAGE_SECTIONS.ACROSS_THE_BOARD}
+        >
           <CompactList stories={homepage.acrossTheBoard} />
         </Section>
       ) : null}
@@ -160,7 +182,10 @@ export default function HomePage() {
         <Section id="section-most-read" meta={HOMEPAGE_SECTIONS.MOST_READ}>
           <ol className="space-y-3">
             {homepage.mostRead.map((story, index) => (
-              <li key={story.id} className="flex gap-4 border-b border-border pb-3 last:border-b-0">
+              <li
+                key={story.id}
+                className="flex gap-4 border-b border-border pb-3 last:border-b-0"
+              >
                 <span
                   aria-hidden="true"
                   className="font-display text-3xl leading-none text-chalk tabular-nums"

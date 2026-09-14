@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import type { ImageMeta } from "@/types/story";
 
 interface StoryImageProps {
@@ -8,13 +9,6 @@ interface StoryImageProps {
   /** Protects the lead image from lazy loading, per blueprint section 19. */
   priority?: boolean;
   sizes?: string;
-  /**
-   * An explicit height utility here (e.g. "md:h-full") wins over the
-   * `aspectRatio` style at that breakpoint — CSS only derives height from
-   * aspect-ratio when height is auto. LeadPackage uses this so the image
-   * fills a taller sibling column instead of leaving dead space below a
-   * fixed-ratio crop.
-   */
   className?: string;
   showCredit?: boolean;
 }
@@ -35,15 +29,22 @@ export function StoryImage({
   const objectPosition = image.focalPoint
     ? `${image.focalPoint.x * 100}% ${image.focalPoint.y * 100}%`
     : "50% 50%";
+  const frameStyle = {
+    "--story-aspect": aspectRatio,
+  } as CSSProperties;
 
   return (
-    <figure className={`relative overflow-hidden bg-surface ${className}`} style={{ aspectRatio }}>
+    <figure
+      className={`story-image relative overflow-hidden bg-surface ${className}`}
+      style={frameStyle}
+    >
       <Image
         src={image.src}
         alt={image.alt}
         fill
         sizes={sizes}
-        priority={priority}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         unoptimized
         style={{ objectFit: "cover", objectPosition }}
       />
