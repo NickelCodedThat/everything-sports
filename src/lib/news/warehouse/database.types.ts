@@ -73,6 +73,13 @@ export type Database = {
             foreignKeyName: "candidate_ingestion_events_candidate_id_fkey"
             columns: ["candidate_id"]
             isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "candidate_ingestion_events_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
             referencedRelation: "news_candidates"
             referencedColumns: ["id"]
           },
@@ -336,6 +343,13 @@ export type Database = {
             foreignKeyName: "news_candidates_headline_primary_id_fkey"
             columns: ["headline_primary_id"]
             isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "news_candidates_headline_primary_id_fkey"
+            columns: ["headline_primary_id"]
+            isOneToOne: false
             referencedRelation: "news_candidates"
             referencedColumns: ["id"]
           },
@@ -466,17 +480,86 @@ export type Database = {
         }
         Relationships: []
       }
+      newsroom_locks: {
+        Row: {
+          acquired_at: string
+          expires_at: string
+          holder: string
+          lock_key: string
+        }
+        Insert: {
+          acquired_at?: string
+          expires_at: string
+          holder: string
+          lock_key: string
+        }
+        Update: {
+          acquired_at?: string
+          expires_at?: string
+          holder?: string
+          lock_key?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
+      news_candidate_feed: {
+        Row: {
+          candidate_id: string | null
+          classification_confidence: string | null
+          classification_signals: Json | null
+          discovered_at: string | null
+          discovery_text: string | null
+          fresh_at: string | null
+          headline_kind: string | null
+          headline_primary_id: string | null
+          language: string | null
+          league: string | null
+          normalized_headline: string | null
+          provider_key: string | null
+          published_at: string | null
+          publisher_headline: string | null
+          query_profile: string | null
+          source_domain: string | null
+          source_enabled: boolean | null
+          source_name: string | null
+          source_quality: string | null
+          source_url: string | null
+          sport: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_candidates_headline_primary_id_fkey"
+            columns: ["headline_primary_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "news_candidates_headline_primary_id_fkey"
+            columns: ["headline_primary_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_headline_groups: {
         Row: {
           candidate_count: number | null
+          first_published_at: string | null
           first_seen_at: string | null
           headline_kind: string | null
+          last_published_at: string | null
           last_seen_at: string | null
           normalized_headline: string | null
+          provider_count: number | null
+          root_candidate_id: string | null
           sample_headline: string | null
           source_count: number | null
+          sport: string | null
+          sports: string[] | null
         }
         Relationships: []
       }
@@ -491,7 +574,18 @@ export type Database = {
         }
         Returns: Json
       }
+      news_reap_stale_runs: { Args: { p_stale_after?: string }; Returns: Json }
       news_warehouse_stats: { Args: { p_recent?: string }; Returns: Json }
+      newsroom_invoke_worker: { Args: { p_provider?: string }; Returns: number }
+      newsroom_release_lock: {
+        Args: { p_holder: string; p_lock_key: string }
+        Returns: boolean
+      }
+      newsroom_scheduler_status: { Args: never; Returns: Json }
+      newsroom_try_acquire_lock: {
+        Args: { p_holder: string; p_lock_key: string; p_ttl: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

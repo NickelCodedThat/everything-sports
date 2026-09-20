@@ -25,7 +25,7 @@ describe("warehouse migrations", () => {
     expect(TABLES.sort()).toEqual(
       [
         "candidate_ingestion_events", "candidate_rejections", "ingestion_runs", "news_candidates",
-        "news_ingestion_units", "news_providers", "news_sources",
+        "news_ingestion_units", "news_providers", "news_sources", "newsroom_locks",
       ].sort(),
     );
   });
@@ -98,7 +98,89 @@ describe("warehouse migrations", () => {
     expect(candidates).toMatch(/remote_image_ref\s+text/);
   });
 
-  it("do not schedule anything (no pg_cron / cron jobs in this phase)", () => {
-    expect(stripped).not.toMatch(/cron\.schedule|create extension[^;]*pg_cron/i);
+  it("schedule only in the dedicated schedule migration (Phase 5); the warehouse schema itself has no cron", () => {
+    const warehouse = readFileSync(join(MIGRATIONS_DIR, files[0]), "utf8").replace(/--.*$/gm, "");
+    expect(warehouse).not.toMatch(/cron\.schedule|pg_cron/i);
+  });
+});
+
+describe("newsroom engine migrations (Phase 5)", () => {
+  const engine = readFileSync(join(MIGRATIONS_DIR, "20260920120000_newsroom_engine.sql"), "utf8").replace(/--.*$/gm, "");
+  const schedule = readFileSync(join(MIGRATIONS_DIR, "20260920120100_newsroom_schedule.sql"), "utf8");
+  const scheduleCode = schedule.replace(/--.*$/gm, "");
+
+  it("protect the lock table like every other warehouse table", () => {
+    expect(engine).toMatch(/alter table public\.newsroom_locks enable row level security/);
+    expect(engine).toMatch(/revoke all on public\.newsroom_locks from public, anon, authenticated/);
+    expect(engine).toMatch(/lock_key\s+text primary key/);
+  });
+
+  it("make lock acquisition atomic: one INSERT ... ON CONFLICT DO UPDATE ... WHERE expired", () => {
+    expect(engine).toMatch(/on conflict \(lock_key\) do update[\s\S]*where public\.newsroom_locks\.expires_at <= now\(\)/);
+  });
+
+  it("restrict every new function to service_role", () => {
+    for (const fn of ["newsroom_try_acquire_lock", "newsroom_release_lock", "news_reap_stale_runs"]) {
+      expect(engine).toMatch(new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`));
+      expect(engine).toMatch(new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role`));
+    }
+  });
+
+  it("reap stale runs by updating (never deleting) with an explicit reason", () => {
+    expect(engine).not.toMatch(/delete from public\.ingestion_runs/);
+    expect(engine).toContain("'stale-run-reaped'");
+    expect(engine).toMatch(/finished_at = now\(\)/);
+  });
+
+  it("expose the internal feed without a plain headline column, so discovery text cannot pass as a headline", () => {
+    const feed = engine.match(/create view public\.news_candidate_feed[\s\S]*?from public\.news_candidates c/)?.[0] ?? "";
+    expect(feed).toMatch(/security_invoker = true/);
+    expect(feed).toMatch(/publisher_headline/);
+    expect(feed).toMatch(/discovery_text/);
+    expect(feed).not.toMatch(/c\.headline\s*,/);
+    expect(engine).toMatch(/revoke all on public\.news_candidate_feed from public, anon, authenticated/);
+  });
+
+  it("evolve the headline-group view by adding columns (root, sport, sports)", () => {
+    expect(engine).toMatch(/create or replace view public\.news_headline_groups/);
+    for (const column of ["root_candidate_id", "as sport", "as sports", "provider_count"]) expect(engine).toContain(column);
+  });
+
+  it("schedule with NO secret and NO environment-specific URL in the migration", () => {
+    expect(scheduleCode).not.toMatch(/https?:\/\//i);
+    expect(scheduleCode).not.toMatch(/Bearer [A-Za-z0-9]{8,}/);
+    expect(scheduleCode).not.toMatch(/sb_secret_|sb_publishable_|eyJ[A-Za-z0-9_-]{10,}/);
+    // secrets come from Vault at call time
+    expect(scheduleCode).toContain("'newsroom_worker_url'");
+    expect(scheduleCode).toContain("'newsroom_cron_secret'");
+    expect(scheduleCode).toMatch(/vault\.decrypted_secrets/);
+  });
+
+  it("make the worker call a safe no-op until Vault is configured, and asynchronous via pg_net", () => {
+    expect(scheduleCode).toMatch(/return null;/);
+    expect(scheduleCode).toMatch(/net\.http_post/);
+    expect(scheduleCode).toMatch(/timeout_milliseconds := 55000/);
+  });
+
+  it("install idempotent jobs by name, guarded on pg_cron being available", () => {
+    expect(scheduleCode).toMatch(/if exists \(select 1 from pg_extension where extname = 'pg_cron'\)/);
+    for (const name of ["newsroom-gkg-ingest", "newsroom-wikipedia-ingest", "newsroom-newsdata-ingest", "newsroom-reap-stale-runs", "newsroom-cron-history-cleanup"]) {
+      expect(scheduleCode).toContain(`cron.schedule('${name}'`);
+    }
+  });
+
+  it("keep cron history cleanup modest (7 days) and never touch warehouse data", () => {
+    expect(scheduleCode).toMatch(/delete from cron\.job_run_details where end_time < now\(\) - interval '7 days'/);
+    expect(scheduleCode).not.toMatch(/delete from public\.news_/);
+  });
+
+  it("restrict the worker/status functions to service_role", () => {
+    for (const fn of ["newsroom_invoke_worker", "newsroom_scheduler_status"]) {
+      expect(scheduleCode).toMatch(new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`));
+    }
+  });
+
+  it("do not let the database download or parse GDELT files", () => {
+    expect(scheduleCode).not.toMatch(/gdeltproject|\.gkg\.csv|unzip/i);
   });
 });

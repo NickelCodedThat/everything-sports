@@ -17,5 +17,8 @@ export { startRun, finishRun, getRun, getLatestRuns, findProcessedUnitKeys } fro
 export { syncProvider, setProviderStatus, ProviderNotAllowedError } from "./providers";
 export { getSourceByDomain, listSources, setSourceEnabled } from "./sources";
 export { getWarehouseStats } from "./stats";
+export { listFreshCandidates, listHeadlineGroupInputs, getPublishableHeadline } from "./feed";
+export type { FeedQuery, FeedItem, HeadlineGroupInput, HeadlineGroupQuery } from "./feed";
+export { reapStaleRuns, tryAcquireLock, releaseLock, getProviderRow, getLastAttemptAt, getSchedulerStatus } from "./engine-db";
 export { normalizeHeadline, headlineKindFor, toCandidatePayload, toRejectionPayload } from "./normalize";
 export type * from "./types";

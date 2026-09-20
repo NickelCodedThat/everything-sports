@@ -57,6 +57,9 @@ interface Progress {
   unitsSkipped: number;
   errors: string[];
   state: IngestionProviderState;
+  /** Newest unit the provider said exists (GKG: the newest published file) and how many units the window covered. */
+  latestAvailableUnit?: string;
+  unitsListed?: number;
 }
 
 /** Providers with immutable units: skip stored units before downloading, claim each unit atomically with its rows. */
@@ -75,6 +78,9 @@ async function ingestUnits(
     progress.errors.push(error instanceof ProviderRateLimitedError ? error.message : describeFetchError(error));
     return;
   }
+
+  progress.unitsListed = keys.length;
+  progress.latestAvailableUnit = keys[keys.length - 1];
 
   const alreadyProcessed = await findProcessedUnitKeys(client, keys);
   progress.unitsSkipped += alreadyProcessed.size;
@@ -197,6 +203,11 @@ export async function runWarehouseIngestion(
     unitsProcessed: progress.unitsProcessed,
     unitsSkipped: progress.unitsSkipped,
     errorMessage: progress.errors.length > 0 ? progress.errors.join("; ").slice(0, 2000) : undefined,
+    metadata: {
+      limit: params.limit,
+      ...(progress.latestAvailableUnit ? { latest_available_unit: progress.latestAvailableUnit } : {}),
+      ...(progress.unitsListed !== undefined ? { units_listed: progress.unitsListed } : {}),
+    },
   });
 
   return {

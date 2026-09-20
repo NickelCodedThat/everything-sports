@@ -1,6 +1,6 @@
 # News Warehouse
 
-**Status:** Phase 4 — Persistent News Warehouse (internal; not connected to the public site)
+**Status:** Phase 4 — Persistent News Warehouse (internal; not connected to the public site). Phase 5 automated its ingestion — see [`NEWSROOM-ENGINE.md`](NEWSROOM-ENGINE.md).
 **Scope:** durable, deduplicated memory for the newsroom's discovered candidates. Companion to
 `docs/NEWS-SOURCE-STRATEGY.md` (discovery, provider policy) — it changes neither the brand blueprint nor the
 public homepage, which still reads only `src/data/stories.ts`.
@@ -66,7 +66,8 @@ Indexes follow the actual workload: `published_at desc`, `discovered_at desc`, `
 run/provenance lookups, and a GIN index on rejection reasons. Not every column is indexed.
 
 Two SQL functions, both `service_role`-only: **`news_ingest_batch`** (the write path) and
-**`news_warehouse_stats`** (the internal summary).
+**`news_warehouse_stats`** (the internal summary). Phase 5 adds `newsroom_locks` (overlap lease), `news_reap_stale_runs`, the
+`news_candidate_feed` read model and extra `news_headline_groups` columns — documented in `NEWSROOM-ENGINE.md`.
 
 ## 3. Dedupe rules
 
@@ -148,7 +149,8 @@ racing on one unit: exactly one wins).
 | Provider throttled/unavailable/errored before anything landed | `throttled` / `unavailable` / `error` | `failed` |
 
 Provider throttling (`ProviderRateLimitedError`) stops the unit loop immediately. A crash between `startRun` and
-`finishRun` leaves a `running` row — a reaper for stale runs belongs to the scheduler phase.
+`finishRun` leaves a `running` row — since Phase 5 the stale-run reaper (`news_reap_stale_runs`, 30 minutes) closes it as
+`failed` / `stale-run-reaped`, and `trigger = 'scheduled'` is used by the scheduler-driven runs (`NEWSROOM-ENGINE.md`).
 
 `records_returned` counts candidates the provider normalized (GKG pre-drops non-sport rows); `records_accepted` /
 `records_rejected` are the intake-filter split; `records_duplicate_url` includes provider-item duplicates.
@@ -274,7 +276,7 @@ warehouse: MLB pennant race and NFL Sunday games, NBA offseason.)
 
 ## 12. Known limits
 
-- A run whose process dies mid-flight stays `running` (no reaper yet).
+- ~~A run whose process dies mid-flight stays `running`~~ — closed in Phase 5 by the stale-run reaper.
 - `news_sources.quality_bucket` is set when a domain is first seen and is not refreshed from code afterwards (the DB is
   authoritative once a source exists; changing the code's known-publisher list does not rewrite history).
 - Wikipedia Current Events items are non-immutable pages, so they have no unit key — URL dedupe protects them, and each
@@ -290,7 +292,7 @@ Phase 4 deletes data.
 
 ## 13. What moves to Phase 5
 
-- The scheduler (15-minute GKG cadence — the operation is already idempotent and unit-keyed) and its run reaper/alerting.
+- ~~The scheduler and run reaper~~ — built in Phase 5 (`NEWSROOM-ENGINE.md`); alert *routing* is still to do.
 - Fuzzy same-event clustering built on `news_headline_groups` + provenance; `clustered`/`promoted` statuses.
 - Ranking, editorial review, and the read path to the public site (and the RLS/policy design that requires).
 - NewsData ingestion in production (needs a key), DOC-API opportunistic queries behind their cooldown.

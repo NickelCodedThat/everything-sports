@@ -8,8 +8,9 @@ Phase 1 built the application foundation, brand/design system, editorial domain 
 engine, fixture data, and a fully composed homepage. Phase 3 adds a **newsroom intake layer** —
 real, live sports-news discovery from free sources — as a CLI/dev-only tool, entirely separate from
 the public homepage, which still reads only the Phase 1 fixture data. Phase 4 adds a **persistent
-news warehouse** (Supabase Postgres) that remembers what the newsroom discovers — still internal, still
-not connected to the homepage. See
+news warehouse** (Supabase Postgres) that remembers what the newsroom discovers, and Phase 5 an **automated
+newsroom engine** that ingests on a schedule with health monitoring — all internal, none of it connected to
+the homepage. See
 [Phase 1 scope](#phase-1-scope) and [Newsroom](#newsroom-phase-3-multi-source-candidate-discovery)
 below.
 
@@ -48,7 +49,7 @@ pnpm test        # vitest — domain/ranking/homepage-assembly/newsroom unit tes
 pnpm build       # next build — production build + static generation
 pnpm test:e2e    # playwright — responsive + accessibility smoke tests (builds and boots the app)
 pnpm news:probe  # live newsroom CLI — see "Newsroom" below; not part of the automated test suite
-pnpm test:db     # warehouse integration tests against the local Supabase stack (needs Docker + pnpm db:start)
+pnpm test:db     # warehouse + engine integration tests against the local Supabase stack (needs Docker + pnpm db:start)
 ```
 
 ## Project structure
@@ -78,6 +79,7 @@ src/
       urls/                URL normalization (tracking-param stripping, etc.)
       filters/, sources/   conservative intake filter; operational source-quality buckets
       warehouse/           Phase 4 — server-only Supabase persistence (docs/NEWS-WAREHOUSE.md)
+      engine/              Phase 5 — scheduled tick, health, GKG lag, worker auth (docs/NEWSROOM-ENGINE.md)
       cli/                 pnpm news:probe's argument parsing + report formatting
       newsroom.ts           the multi-provider aggregator
     ranking/              editorial scoring + sorting, with its own unit tests
@@ -88,6 +90,7 @@ src/
 scripts/
   news-probe.ts          the pnpm news:probe CLI entry point (runs via tsx, outside Next.js)
   news-ingest.ts, news-warehouse-stats.ts   the Phase 4 warehouse CLIs
+  news-worker.ts, news-health.ts            the Phase 5 engine CLIs (tick + health)
 supabase/                config.toml + version-controlled migrations for the warehouse schema
 tests/
   integration/warehouse/ database integration tests (pnpm test:db; local Supabase only)
@@ -182,6 +185,20 @@ pnpm news:ingest                    # ingest live GDELT GKG (last 2h) — safe t
 pnpm news:warehouse:stats           # internal summary
 pnpm db:reset                       # rebuild the local schema from migrations
 pnpm test:db                        # integration tests against the local database
+```
+
+## Newsroom engine (Phase 5): scheduled ingestion and health
+
+Supabase Cron triggers a secured, server-only Next.js worker (`POST /api/internal/newsroom/tick`) every 15 minutes
+for GDELT GKG (hourly for Wikipedia Current Events; the throttled DOC API is never scheduled). Overlapping runs are
+prevented by a database lease lock, crashed runs are reaped, and provider health/alert conditions are queryable.
+It creates warehouse candidates only — nothing is promoted to a Story or shown on the site. Architecture, security,
+cadences, runbook and the (single) remote deployment step: [`docs/NEWSROOM-ENGINE.md`](docs/NEWSROOM-ENGINE.md).
+
+```bash
+pnpm news:worker                    # the exact production tick, run locally (--provider, --force, --json)
+pnpm news:health                    # provider health states + alert conditions (--json, --strict, --scheduler)
+pnpm news:ingest                    # unchanged manual ingest        pnpm news:warehouse:stats   # unchanged
 ```
 
 ## Brand implementation

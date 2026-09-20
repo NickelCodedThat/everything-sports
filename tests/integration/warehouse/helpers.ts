@@ -21,7 +21,7 @@ export function makeClient(): WarehouseClient {
 export async function resetWarehouse(): Promise<void> {
   await pool.query(
     `truncate table candidate_ingestion_events, candidate_rejections, news_ingestion_units,
-       news_candidates, ingestion_runs, news_sources, news_providers restart identity cascade`,
+       news_candidates, ingestion_runs, news_sources, news_providers, newsroom_locks restart identity cascade`,
   );
 }
 
@@ -94,4 +94,27 @@ export async function openRun(client: WarehouseClient, provider: CandidateProvid
   const row = await syncProvider(client, provider);
   const run = await startRun(client, { providerId: row.id, trigger: "test" });
   return run.id;
+}
+
+const VAULT_NAMES = ["newsroom_worker_url", "newsroom_cron_secret"];
+
+/**
+ * Runs `fn` with exactly the given newsroom Vault secrets (or none), then restores whatever a
+ * developer had configured locally — so tests never depend on, or clobber, local scheduling setup.
+ */
+export async function withVaultSecrets<T>(secrets: { url?: string; secret?: string }, fn: () => Promise<T>): Promise<T> {
+  const saved = (await pool.query("select name, decrypted_secret from vault.decrypted_secrets where name = any($1)", [VAULT_NAMES])).rows as {
+    name: string;
+    decrypted_secret: string;
+  }[];
+  const wipe = () => pool.query("delete from vault.secrets where name = any($1)", [VAULT_NAMES]);
+  await wipe();
+  if (secrets.url) await pool.query("select vault.create_secret($1, 'newsroom_worker_url')", [secrets.url]);
+  if (secrets.secret) await pool.query("select vault.create_secret($1, 'newsroom_cron_secret')", [secrets.secret]);
+  try {
+    return await fn();
+  } finally {
+    await wipe();
+    for (const row of saved) await pool.query("select vault.create_secret($1, $2)", [row.decrypted_secret, row.name]);
+  }
 }

@@ -20,7 +20,9 @@
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
     "db:types": "supabase gen types typescript --local > src/lib/news/warehouse/database.types.ts",
-    "test:db": "vitest run --config vitest.integration.config.ts"
+    "test:db": "vitest run --config vitest.integration.config.ts",
+    "news:worker": "tsx --conditions=react-server scripts/news-worker.ts",
+    "news:health": "tsx --conditions=react-server scripts/news-health.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

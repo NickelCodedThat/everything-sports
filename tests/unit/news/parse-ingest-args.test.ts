@@ -52,3 +52,25 @@ describe("report formatting", () => {
     expect(text).toContain("latest run            (none yet)");
   });
 });
+
+describe("engine report formatting", () => {
+  it("prints the health report without secrets and with the fields an operator needs", async () => {
+    const { formatHealthReport, formatTickReport } = await import("@/lib/news/engine/report");
+    const { ENGINE_PROVIDERS } = await import("@/lib/news/engine/config");
+    const { evaluateProviderHealth, overallState } = await import("@/lib/news/engine/health");
+    const now = new Date("2026-09-20T05:05:00Z");
+    const provider = evaluateProviderHealth({
+      config: ENGINE_PROVIDERS[0], schedulability: { schedulable: true }, dbStatus: "active", now, latestUnitKey: "gdelt-gkg:20260920044500",
+      runs: [{ id: "r", status: "succeeded", providerState: "ok", trigger: "scheduled", startedAt: new Date(now.getTime() - 240_000), finishedAt: new Date(now.getTime() - 200_000), recordsReturned: 37, recordsAccepted: 36, recordsRejected: 1, recordsInserted: 30, unitsProcessed: 1, unitsSkipped: 0, errorMessage: null, metadata: { latest_available_unit: "gdelt-gkg:20260920044500" } }],
+    });
+    const text = formatHealthReport({ generatedAt: now, overall: overallState([provider]), providers: [provider], stuckRuns: [], scheduler: { pgCronInstalled: true, pgNetInstalled: true, workerConfigured: false, jobs: [{ name: "newsroom-gkg-ingest", schedule: "2-59/15 * * * *", active: true }] }, alerts: provider.alerts });
+    for (const expected of ["NEWSROOM HEALTH", "gdelt-gkg", "status: healthy", "latest unit: 20260920044500", "returned 37", "consecutive failures: 0", "stuck runs: 0", "NOT configured", "job newsroom-gkg-ingest"]) {
+      expect(text).toContain(expected);
+    }
+    expect(text).not.toMatch(/sb_secret|Bearer|eyJ/);
+
+    const tick = formatTickReport({ trigger: "scheduled", startedAt: "a", finishedAt: "b", reaped: { count: 1, runIds: ["x"] }, ok: true, results: [{ providerId: "gdelt", outcome: "skipped-not-scheduled", detail: "manual-only" }] });
+    expect(tick).toContain("reaped stale runs: 1");
+    expect(tick).toContain("gdelt: skipped-not-scheduled — manual-only");
+  });
+});
