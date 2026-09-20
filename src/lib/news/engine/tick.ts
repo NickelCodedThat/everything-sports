@@ -4,6 +4,7 @@ import { getCandidateProviderById } from "../providers";
 import type { CandidateProvider } from "../providers/types";
 import type { WarehouseClient } from "../warehouse/client";
 import { getLastAttemptAt, getProviderRow, releaseLock, reapStaleRuns, tryAcquireLock } from "../warehouse/engine-db";
+import { runClustering, type ClusterRunReport } from "../clustering/run";
 import { runWarehouseIngestion, type WarehouseRunReport } from "../warehouse/ingest";
 import { assessSchedulability, ENGINE_PROVIDERS, STALE_RUN_AFTER_MINUTES, type EngineProviderConfig } from "./config";
 
@@ -55,6 +56,22 @@ export interface ProviderTickResult {
   run?: RunSummary;
 }
 
+/**
+ * The clustering stage runs AFTER ingestion, in its own try/catch and its own audit table
+ * (clustering_runs). A clustering failure is reported here and never touches `TickResult.ok`,
+ * never rolls back or marks failed a successful ingestion run.
+ */
+export interface ClusteringStageSummary {
+  outcome: "ran" | "skipped-locked" | "failed" | "error";
+  detail?: string;
+  runId: string | null;
+  considered: number;
+  clustersCreated: number;
+  membershipsCreated: number;
+  ambiguousCount: number;
+  durationMs: number;
+}
+
 export interface TickResult {
   trigger: TickTrigger;
   startedAt: string;
@@ -63,6 +80,8 @@ export interface TickResult {
   results: ProviderTickResult[];
   /** False only when a provider run failed outright or the tick itself errored. Skips are not failures. */
   ok: boolean;
+  /** Null when the stage did not run (no provider ran this tick, or clustering is not wired in). */
+  clustering: ClusteringStageSummary | null;
 }
 
 export interface TickDeps {
@@ -75,6 +94,8 @@ export interface TickDeps {
   releaseLock(lockKey: string, holder: string): Promise<void>;
   resolveProvider(providerId: string): CandidateProvider | undefined;
   runIngestion(provider: CandidateProvider, params: { window: string; limit: number; trigger: TickTrigger }): Promise<WarehouseRunReport>;
+  /** Optional: absent means the tick does no clustering. */
+  runClustering?(params: { trigger: TickTrigger }): Promise<ClusterRunReport>;
 }
 
 export function createTickDeps(client: WarehouseClient, overrides: Partial<TickDeps> = {}): TickDeps {
@@ -89,6 +110,7 @@ export function createTickDeps(client: WarehouseClient, overrides: Partial<TickD
     },
     resolveProvider: getCandidateProviderById,
     runIngestion: (provider, params) => runWarehouseIngestion(client, { provider, ...params }),
+    runClustering: ({ trigger }) => runClustering(client, { trigger, window: "24h" }),
     ...overrides,
   };
 }
@@ -185,6 +207,33 @@ async function tickProvider(
   }
 }
 
+async function runClusteringStage(deps: TickDeps, trigger: TickTrigger): Promise<ClusteringStageSummary> {
+  try {
+    const report = await deps.runClustering!({ trigger });
+    return {
+      outcome: report.status === "skipped-locked" ? "skipped-locked" : report.status === "failed" ? "failed" : "ran",
+      detail: report.errors.length ? trimNote(report.errors[0]) : undefined,
+      runId: report.runId,
+      considered: report.considered,
+      clustersCreated: report.clustersCreated,
+      membershipsCreated: report.membershipsCreated,
+      ambiguousCount: report.ambiguousCount,
+      durationMs: report.durationMs,
+    };
+  } catch (error) {
+    return {
+      outcome: "error",
+      detail: trimNote(error instanceof Error ? error.message : String(error)),
+      runId: null,
+      considered: 0,
+      clustersCreated: 0,
+      membershipsCreated: 0,
+      ambiguousCount: 0,
+      durationMs: 0,
+    };
+  }
+}
+
 export async function runScheduledTick(options: RunScheduledTickOptions): Promise<TickResult> {
   const { deps } = options;
   const trigger = options.trigger ?? "scheduled";
@@ -207,12 +256,18 @@ export async function runScheduledTick(options: RunScheduledTickOptions): Promis
     results.push(await tickProvider(config, { deps, force: options.force ?? false, trigger, env }));
   }
 
+  // Clustering is a separate stage with its own failure boundary; it only follows ingestion that ran.
+  const ok = results.every((result) => result.outcome !== "error" && !(result.run && result.run.status === "failed"));
+  const anyIngested = results.some((result) => result.outcome === "ran" && result.run?.status !== "failed");
+  const clustering = anyIngested && deps.runClustering ? await runClusteringStage(deps, trigger) : null;
+
   return {
     trigger,
     startedAt: startedAt.toISOString(),
     finishedAt: deps.now().toISOString(),
     reaped: { count: reaped.reaped, runIds: reaped.runIds },
     results,
-    ok: results.every((result) => result.outcome !== "error" && !(result.run && result.run.status === "failed")),
+    ok,
+    clustering,
   };
 }

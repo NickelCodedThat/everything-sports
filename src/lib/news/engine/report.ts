@@ -51,6 +51,16 @@ export function formatHealthReport(health: NewsroomHealth): string {
     for (const job of s.jobs) lines.push(`  job ${job.name}  ${job.schedule}  ${job.active ? "active" : "paused"}`);
   }
 
+  if (health.clustering) {
+    const c = health.clustering;
+    lines.push(
+      "",
+      "clustering:",
+      `  last successful run: ${c.lastSuccessAt ? c.lastSuccessAt.toISOString() : "never"}${c.lastRun ? `   latest run: ${c.lastRun.status}` : ""}`,
+      `  unclustered recent candidates (24h): ${c.unclusteredRecent}   ambiguous (needs review): ${c.ambiguousOpen}   live clusters: ${c.liveClusters}`,
+      `  failed runs (24h): ${c.failuresLast24h}`,
+    );
+  }
   lines.push("", `alerts: ${health.alerts.length}`);
   for (const alert of health.alerts) lines.push(`  [${alert.severity}] ${alert.code}${alert.providerId ? ` (${alert.providerId})` : ""}: ${alert.message}`);
   return lines.join("\n");
@@ -75,6 +85,14 @@ export function formatTickReport(result: TickResult): string {
       `  observations ${r.observations}, sources created ${r.sourcesCreated}, ${r.durationMs}ms`,
     );
     for (const note of r.notes) lines.push(`  note: ${note}`);
+  }
+  if (result.clustering) {
+    const c = result.clustering;
+    lines.push(
+      "",
+      `clustering: ${c.outcome}${c.runId ? ` — run ${c.runId}` : ""}${c.detail ? ` — ${c.detail}` : ""}`,
+      `  considered ${c.considered}, clusters created ${c.clustersCreated}, memberships ${c.membershipsCreated}, near misses ${c.ambiguousCount}, ${c.durationMs}ms`,
+    );
   }
   return lines.join("\n");
 }

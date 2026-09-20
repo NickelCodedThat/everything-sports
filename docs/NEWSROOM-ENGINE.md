@@ -4,7 +4,7 @@
 **Scope:** turns the Phase 4 warehouse from "a human runs a CLI" into a 24/7 internal newsroom: scheduled ingestion,
 overlap protection, stuck-run recovery, provider health and alert conditions. Read
 [`NEWS-SOURCE-STRATEGY.md`](NEWS-SOURCE-STRATEGY.md) (discovery, provider policy) and [`NEWS-WAREHOUSE.md`](NEWS-WAREHOUSE.md)
-(storage, dedupe) first. Nothing here promotes a candidate to a Story, touches the homepage, or clusters events.
+(storage, dedupe) first. Nothing here promotes a candidate to a Story or touches the homepage. (Phase 6 adds a story-clustering stage after ingestion — see §9a and [`STORY-CLUSTERING.md`](STORY-CLUSTERING.md).)
 
 ## 1. Architecture
 
@@ -19,6 +19,7 @@ pg_net  ── POST + Bearer secret (from Supabase Vault) ──►  /api/intern
                                           1. reap stale runs
                                           2. per provider: policy → config → DB switch → due? → overlap lock
                                           3. runWarehouseIngestion()   (Phase 4 service, unchanged)
+                                          4. runClustering()           (Phase 6 — separate stage, see §9a)
                                               ▼
                                         Supabase Postgres (warehouse)
 ```
@@ -186,6 +187,16 @@ To exercise the full HTTP path locally: `pnpm build && pnpm start` (with `NEWSRO
 `http://host.docker.internal:3000/api/internal/newsroom/tick`, and call `select public.newsroom_invoke_worker('gdelt-gkg');`
 or wait for the next cron slot — see the validation in §13.
 
+## 9a. Clustering stage (Phase 6)
+
+After the per-provider loop, `runScheduledTick` runs `runClustering` (`src/lib/news/clustering/run.ts`) whenever at least one
+provider ran without failing. It is a **separate failure boundary**: its own `try/catch`, its own overlap lease (`cluster:run`),
+its own audit table (`clustering_runs`, not `ingestion_runs`). The outcome is reported in `TickResult.clustering`
+(`ran` / `skipped-locked` / `failed` / `error`, plus considered / created / near-miss counts) and **never** changes
+`TickResult.ok`, an ingestion run's status, or ingested data — a clustering failure cannot roll back or mark failed a successful
+ingestion. No extra cron job: each ingestion tick clusters what it just stored (a pg_cron job only reaps stuck clustering runs).
+`pnpm news:health` gains a minimal clustering section (warnings only). Details: [`STORY-CLUSTERING.md`](STORY-CLUSTERING.md) §11.
+
 ## 10. Internal read models (Phase 6 preparation — not public)
 
 `src/lib/news/warehouse/feed.ts`:
@@ -265,5 +276,5 @@ Wikipedia rows only with `includeDiscoveryText`, each `publishable = null`.
 
 ## 14. What moves to Phase 6
 
-Fuzzy same-event clustering (built on `listHeadlineGroupInputs` + provenance); the `clustered`/`promoted` statuses; ranking and
+~~Fuzzy same-event clustering~~ — built in Phase 6 ([`STORY-CLUSTERING.md`](STORY-CLUSTERING.md)); the `promoted` status; ranking and
 editorial processing; routing alerts to a notifier; retention jobs; NewsData in production once a key exists.

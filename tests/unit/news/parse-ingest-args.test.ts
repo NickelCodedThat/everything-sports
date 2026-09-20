@@ -69,7 +69,7 @@ describe("engine report formatting", () => {
     }
     expect(text).not.toMatch(/sb_secret|Bearer|eyJ/);
 
-    const tick = formatTickReport({ trigger: "scheduled", startedAt: "a", finishedAt: "b", reaped: { count: 1, runIds: ["x"] }, ok: true, results: [{ providerId: "gdelt", outcome: "skipped-not-scheduled", detail: "manual-only" }] });
+    const tick = formatTickReport({ trigger: "scheduled", startedAt: "a", finishedAt: "b", reaped: { count: 1, runIds: ["x"] }, ok: true, clustering: null, results: [{ providerId: "gdelt", outcome: "skipped-not-scheduled", detail: "manual-only" }] });
     expect(tick).toContain("reaped stale runs: 1");
     expect(tick).toContain("gdelt: skipped-not-scheduled — manual-only");
   });

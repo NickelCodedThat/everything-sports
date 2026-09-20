@@ -84,6 +84,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "candidate_ingestion_events_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+          {
             foreignKeyName: "candidate_ingestion_events_ingestion_run_id_fkey"
             columns: ["ingestion_run_id"]
             isOneToOne: false
@@ -178,6 +185,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clustering_runs: {
+        Row: {
+          algorithm_version: string
+          ambiguous_count: number
+          candidates_considered: number
+          clusters_created: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          joined_existing: number
+          memberships_created: number
+          metadata: Json
+          sport_filter: string | null
+          started_at: string
+          status: string
+          trigger: string
+          window_label: string | null
+        }
+        Insert: {
+          algorithm_version: string
+          ambiguous_count?: number
+          candidates_considered?: number
+          clusters_created?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          joined_existing?: number
+          memberships_created?: number
+          metadata?: Json
+          sport_filter?: string | null
+          started_at?: string
+          status?: string
+          trigger?: string
+          window_label?: string | null
+        }
+        Update: {
+          algorithm_version?: string
+          ambiguous_count?: number
+          candidates_considered?: number
+          clusters_created?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          joined_existing?: number
+          memberships_created?: number
+          metadata?: Json
+          sport_filter?: string | null
+          started_at?: string
+          status?: string
+          trigger?: string
+          window_label?: string | null
+        }
+        Relationships: []
       }
       ingestion_runs: {
         Row: {
@@ -354,6 +415,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "news_candidates_headline_primary_id_fkey"
+            columns: ["headline_primary_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+          {
             foreignKeyName: "news_candidates_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
@@ -501,6 +569,348 @@ export type Database = {
         }
         Relationships: []
       }
+      story_cluster_ambiguities: {
+        Row: {
+          candidate_id: string
+          cluster_id: string
+          clustering_run_id: string | null
+          confidence: string
+          created_at: string
+          dismissed_at: string | null
+          evidence: Json
+          id: number
+          reason: string
+          score: number
+        }
+        Insert: {
+          candidate_id: string
+          cluster_id: string
+          clustering_run_id?: string | null
+          confidence: string
+          created_at?: string
+          dismissed_at?: string | null
+          evidence?: Json
+          id?: never
+          reason: string
+          score: number
+        }
+        Update: {
+          candidate_id?: string
+          cluster_id?: string
+          clustering_run_id?: string | null
+          confidence?: string
+          created_at?: string
+          dismissed_at?: string | null
+          evidence?: Json
+          id?: never
+          reason?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_cluster_ambiguities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_clustering_run_id_fkey"
+            columns: ["clustering_run_id"]
+            isOneToOne: false
+            referencedRelation: "clustering_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_cluster_members: {
+        Row: {
+          candidate_id: string
+          cluster_id: string
+          clustering_run_id: string | null
+          confidence: string
+          entities: string[]
+          event_type: string | null
+          evidence: Json
+          joined_at: string
+          match_method: string
+          match_score: number
+          merged_from_cluster_id: string | null
+        }
+        Insert: {
+          candidate_id: string
+          cluster_id: string
+          clustering_run_id?: string | null
+          confidence: string
+          entities?: string[]
+          event_type?: string | null
+          evidence?: Json
+          joined_at?: string
+          match_method: string
+          match_score: number
+          merged_from_cluster_id?: string | null
+        }
+        Update: {
+          candidate_id?: string
+          cluster_id?: string
+          clustering_run_id?: string | null
+          confidence?: string
+          entities?: string[]
+          event_type?: string | null
+          evidence?: Json
+          joined_at?: string
+          match_method?: string
+          match_score?: number
+          merged_from_cluster_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_cluster_members_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: true
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: true
+            referencedRelation: "news_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: true
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_clustering_run_id_fkey"
+            columns: ["clustering_run_id"]
+            isOneToOne: false
+            referencedRelation: "clustering_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_merged_from_cluster_id_fkey"
+            columns: ["merged_from_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_merged_from_cluster_id_fkey"
+            columns: ["merged_from_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_cluster_merges: {
+        Row: {
+          from_candidate_count: number
+          from_cluster_id: string
+          from_source_count: number
+          id: number
+          into_cluster_id: string
+          members_moved: number
+          merged_at: string
+          reason: string | null
+        }
+        Insert: {
+          from_candidate_count: number
+          from_cluster_id: string
+          from_source_count: number
+          id?: never
+          into_cluster_id: string
+          members_moved: number
+          merged_at?: string
+          reason?: string | null
+        }
+        Update: {
+          from_candidate_count?: number
+          from_cluster_id?: string
+          from_source_count?: number
+          id?: never
+          into_cluster_id?: string
+          members_moved?: number
+          merged_at?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_cluster_merges_from_cluster_id_fkey"
+            columns: ["from_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_merges_from_cluster_id_fkey"
+            columns: ["from_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_merges_into_cluster_id_fkey"
+            columns: ["into_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_merges_into_cluster_id_fkey"
+            columns: ["into_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_clusters: {
+        Row: {
+          candidate_count: number
+          canonical_headline: string | null
+          confidence: string
+          created_at: string
+          event_type: string | null
+          first_published_at: string | null
+          first_seen_at: string
+          id: string
+          last_published_at: string | null
+          last_seen_at: string
+          league: string | null
+          merged_into_id: string | null
+          provider_count: number
+          representative_candidate_id: string | null
+          source_count: number
+          sport: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_count?: number
+          canonical_headline?: string | null
+          confidence?: string
+          created_at?: string
+          event_type?: string | null
+          first_published_at?: string | null
+          first_seen_at: string
+          id?: string
+          last_published_at?: string | null
+          last_seen_at: string
+          league?: string | null
+          merged_into_id?: string | null
+          provider_count?: number
+          representative_candidate_id?: string | null
+          source_count?: number
+          sport: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_count?: number
+          canonical_headline?: string | null
+          confidence?: string
+          created_at?: string
+          event_type?: string | null
+          first_published_at?: string | null
+          first_seen_at?: string
+          id?: string
+          last_published_at?: string | null
+          last_seen_at?: string
+          league?: string | null
+          merged_into_id?: string | null
+          provider_count?: number
+          representative_candidate_id?: string | null
+          source_count?: number
+          sport?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_clusters_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_clusters_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_clusters_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_clusters_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_clusters_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+        ]
+      }
     }
     Views: {
       news_candidate_feed: {
@@ -543,6 +953,13 @@ export type Database = {
             referencedRelation: "news_candidates"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "news_candidates_headline_primary_id_fkey"
+            columns: ["headline_primary_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
         ]
       }
       news_headline_groups: {
@@ -563,8 +980,177 @@ export type Database = {
         }
         Relationships: []
       }
+      news_unclustered_candidates: {
+        Row: {
+          candidate_id: string | null
+          discovered_at: string | null
+          fresh_at: string | null
+          headline_kind: string | null
+          sport: string | null
+        }
+        Insert: {
+          candidate_id?: string | null
+          discovered_at?: string | null
+          fresh_at?: never
+          headline_kind?: string | null
+          sport?: string | null
+        }
+        Update: {
+          candidate_id?: string | null
+          discovered_at?: string | null
+          fresh_at?: never
+          headline_kind?: string | null
+          sport?: string | null
+        }
+        Relationships: []
+      }
+      story_cluster_feed: {
+        Row: {
+          candidate_count: number | null
+          canonical_headline: string | null
+          cluster_id: string | null
+          confidence: string | null
+          entities: string[] | null
+          event_type: string | null
+          first_published_at: string | null
+          first_seen_at: string | null
+          fresh_at: string | null
+          last_published_at: string | null
+          last_seen_at: string | null
+          league: string | null
+          provider_count: number | null
+          representative_candidate_id: string | null
+          representative_domain: string | null
+          representative_source: string | null
+          representative_url: string | null
+          source_count: number | null
+          sport: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_clusters_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_clusters_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_clusters_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+        ]
+      }
+      story_cluster_review_queue: {
+        Row: {
+          ambiguity_id: number | null
+          candidate_id: string | null
+          confidence: string | null
+          created_at: string | null
+          current_cluster_id: string | null
+          evidence: Json | null
+          reason: string | null
+          score: number | null
+          suggested_cluster_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_cluster_ambiguities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_cluster_id_fkey"
+            columns: ["suggested_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_ambiguities_cluster_id_fkey"
+            columns: ["suggested_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_cluster_id_fkey"
+            columns: ["current_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "story_cluster_members_cluster_id_fkey"
+            columns: ["current_cluster_id"]
+            isOneToOne: false
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      news_cluster_assign: {
+        Args: { p_candidate_id: string; p_decision: Json }
+        Returns: Json
+      }
+      news_cluster_neighbors: {
+        Args: {
+          p_candidate_id: string
+          p_floor: number
+          p_limit?: number
+          p_team_regex?: string
+          p_window: string
+        }
+        Returns: {
+          candidate_id: string
+          cluster_event_type: string
+          cluster_first_fresh_at: string
+          cluster_id: string
+          cluster_last_fresh_at: string
+          discovered_at: string
+          exact_headline: boolean
+          fresh_at: string
+          headline: string
+          headline_kind: string
+          league: string
+          normalized_headline: string
+          provider_id: number
+          published_at: string
+          similarity: number
+          source_domain: string
+          source_id: number
+          sport: string
+          word_similarity: number
+        }[]
+      }
       news_ingest_batch: {
         Args: {
           p_candidates: Json
@@ -572,6 +1158,10 @@ export type Database = {
           p_run_id: string
           p_unit_key?: string
         }
+        Returns: Json
+      }
+      news_reap_stale_clustering_runs: {
+        Args: { p_stale_after?: string }
         Returns: Json
       }
       news_reap_stale_runs: { Args: { p_stale_after?: string }; Returns: Json }
@@ -585,6 +1175,26 @@ export type Database = {
       newsroom_try_acquire_lock: {
         Args: { p_holder: string; p_lock_key: string; p_ttl: string }
         Returns: boolean
+      }
+      story_cluster_age_out: {
+        Args: {
+          p_close_after?: string
+          p_now?: string
+          p_stable_after?: string
+        }
+        Returns: Json
+      }
+      story_cluster_merge: {
+        Args: { p_from: string; p_into: string; p_reason?: string }
+        Returns: Json
+      }
+      story_cluster_move_member: {
+        Args: { p_candidate_id: string; p_to: string }
+        Returns: Json
+      }
+      story_cluster_recompute: {
+        Args: { p_cluster_id: string }
+        Returns: undefined
       }
     }
     Enums: {

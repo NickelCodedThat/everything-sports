@@ -20,7 +20,7 @@ Warehouse intake  (server-only)                              src/lib/news/wareho
 Supabase Postgres (RLS on, no client access)                 supabase/migrations/*
         │
         ▼
-Deduplicated candidate history  ──►  (Phase 5+) clustering / ranking / publication
+Deduplicated candidate history  ──►  story clustering (Phase 6, STORY-CLUSTERING.md)  ──►  (later) ranking / publication
 ```
 
 - **Postgres does the deduplication**, not JavaScript. All writes go through one SQL function,
@@ -293,7 +293,7 @@ Phase 4 deletes data.
 ## 13. What moves to Phase 5
 
 - ~~The scheduler and run reaper~~ — built in Phase 5 (`NEWSROOM-ENGINE.md`); alert *routing* is still to do.
-- Fuzzy same-event clustering built on `news_headline_groups` + provenance; `clustered`/`promoted` statuses.
+- ~~Fuzzy same-event clustering~~ — built in Phase 6 (`STORY-CLUSTERING.md`): exact headline groups are its safest seed, `candidate_ingestion_events` feeds its provider count. Membership lives in `story_cluster_members`; candidate `status` is still not written by clustering (`clustered`/`promoted` remain reserved).
 - Ranking, editorial review, and the read path to the public site (and the RLS/policy design that requires).
 - NewsData ingestion in production (needs a key), DOC-API opportunistic queries behind their cooldown.
 - Retention jobs and source-quality refresh.

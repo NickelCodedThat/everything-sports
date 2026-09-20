@@ -80,6 +80,7 @@ src/
       filters/, sources/   conservative intake filter; operational source-quality buckets
       warehouse/           Phase 4 — server-only Supabase persistence (docs/NEWS-WAREHOUSE.md)
       engine/              Phase 5 — scheduled tick, health, GKG lag, worker auth (docs/NEWSROOM-ENGINE.md)
+      clustering/          Phase 6 — same-event story clustering, pure scoring + DB orchestration (docs/STORY-CLUSTERING.md)
       cli/                 pnpm news:probe's argument parsing + report formatting
       newsroom.ts           the multi-provider aggregator
     ranking/              editorial scoring + sorting, with its own unit tests
@@ -199,6 +200,20 @@ cadences, runbook and the (single) remote deployment step: [`docs/NEWSROOM-ENGIN
 pnpm news:worker                    # the exact production tick, run locally (--provider, --force, --json)
 pnpm news:health                    # provider health states + alert conditions (--json, --strict, --scheduler)
 pnpm news:ingest                    # unchanged manual ingest        pnpm news:warehouse:stats   # unchanged
+```
+
+## Story clustering (Phase 6): one story, every source
+
+Internally groups candidates that report the same event into a `story_cluster` — exact headline, `pg_trgm` headline
+similarity, team/person/score evidence, event type and contradiction guards, biased toward precision (a false merge is worse than a
+false split). Every membership stores why it happened. Runs after ingestion in the scheduled tick, in its own failure boundary.
+Internal only: the homepage still reads fixtures. Design, thresholds, validation and known weaknesses:
+[`docs/STORY-CLUSTERING.md`](docs/STORY-CLUSTERING.md).
+
+```bash
+pnpm news:cluster --dry-run         # propose clusters/memberships/evidence, write nothing (--window --sport --limit --json)
+pnpm news:cluster                   # cluster recent unclustered candidates
+pnpm news:clusters                  # inspect clusters (--show=<id>, --review for the near-miss queue, --merge=<into>,<from>)
 ```
 
 ## Brand implementation

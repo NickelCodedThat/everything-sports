@@ -26,6 +26,7 @@ describe("warehouse migrations", () => {
       [
         "candidate_ingestion_events", "candidate_rejections", "ingestion_runs", "news_candidates",
         "news_ingestion_units", "news_providers", "news_sources", "newsroom_locks",
+        "clustering_runs", "story_cluster_ambiguities", "story_cluster_members", "story_cluster_merges", "story_clusters",
       ].sort(),
     );
   });
@@ -182,5 +183,40 @@ describe("newsroom engine migrations (Phase 5)", () => {
 
   it("do not let the database download or parse GDELT files", () => {
     expect(scheduleCode).not.toMatch(/gdeltproject|\.gkg\.csv|unzip/i);
+  });
+});
+
+describe("story clustering migration (Phase 6)", () => {
+  const clustering = readFileSync(join(MIGRATIONS_DIR, "20260920140000_story_clustering.sql"), "utf8").replace(/--.*$/gm, "");
+
+  it("enables pg_trgm in the extensions schema and indexes only publisher titles with GIN", () => {
+    expect(clustering).toMatch(/create extension if not exists pg_trgm with schema extensions/);
+    expect(clustering).toMatch(/create index news_candidates_headline_trgm_idx\s+on public\.news_candidates using gin \(normalized_headline extensions\.gin_trgm_ops\)\s+where headline_kind = 'publisher-title'/);
+  });
+
+  it("enforces one cluster per candidate with the primary key, not application code", () => {
+    expect(clustering).toMatch(/create table public\.story_cluster_members \(\s+candidate_id\s+uuid primary key references public\.news_candidates \(id\) on delete cascade/);
+  });
+
+  it("restricts every clustering function to service_role", () => {
+    for (const fn of ["news_cluster_neighbors", "news_cluster_assign", "story_cluster_recompute", "story_cluster_merge", "story_cluster_move_member", "story_cluster_age_out", "news_reap_stale_clustering_runs"]) {
+      expect(clustering).toMatch(new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`));
+      expect(clustering).toMatch(new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role`));
+    }
+  });
+
+  it("serializes writers of one exact headline with an advisory transaction lock", () => {
+    expect(clustering).toMatch(/pg_advisory_xact_lock\(hashtextextended\('story-cluster:'/);
+  });
+
+  it("makes the internal views security_invoker and never grants them to clients", () => {
+    for (const view of ["news_unclustered_candidates", "story_cluster_feed", "story_cluster_review_queue"]) {
+      expect(clustering).toMatch(new RegExp(`create view public\\.${view}\\s+with \\(security_invoker = true\\)`));
+    }
+  });
+
+  it("never lets a cluster point at itself or form a merge chain by construction", () => {
+    expect(clustering).toMatch(/check \(merged_into_id is null or \(status = 'closed' and merged_into_id <> id\)\)/);
+    expect(clustering).toMatch(/would form a chain\/cycle/);
   });
 });
