@@ -1,5 +1,5 @@
 import { CONFIDENCE_POINTS, UNCORROBORATED_PENALTY, EVENT_IMPORTANCE, OVERRIDE, PRIORITY_BANDS, SPORT_BASE, STAKES_BONUS, TIER_POINTS, URGENCY_POINTS } from "./config";
-import { assessEligibility } from "./eligibility";
+import { assessEligibility, publicationHeadline } from "./eligibility";
 import { assessSections, deskForSport } from "./sections";
 import { breadthPoints, buildMetrics, corroboratedImportance, eventImportancePoints, hasStakes, hoursBetween, inferTier, newestAt, firstAt, recencyPoints, velocityPoints } from "./signals";
 import { classifyUrgency, hasSpeculativeLanguage } from "./urgency";
@@ -24,10 +24,10 @@ export function priorityForScore(score: number): 1 | 2 | 3 | 4 {
  *
  *   sport priority     basketball 100 · football 95 · baseball 90 · boxing/mma/soccer 70 · … (Phase 1 hierarchy)
  *   competition tier   professional +20 · international +16 · unspecified +10 · college +6 · developmental 0
- *   recency            0–60, smooth half-life decay (latest report 6h, event age 12h)
+ *   recency            0–60, smooth half-life decay (latest report 6h, event age 10h)
  *   event importance   death 55 · trade/coaching/retirement 45 · injury/discipline 40 · signing/record 35
  *                      · business/draft 30 · transaction 20 · game result 15 · preview −15
- *   stakes language    +12 when headlines say Finals / World Series / Super Bowl / title / Game 7 …
+ *   stakes language    +20 when headlines say Finals / World Series / Super Bowl / title / Game 7 …
  *   breadth            distinct publisher domains (log, cap 34 @ 20) + independence 8 + known confirmation 6 + providers 2
  *   velocity           new domains in the last 15m (5 each, ≤4) and rest of the hour (2 each, ≤5); needs ≥ 2 domains
  *   urgency            developing +12 · breaking-candidate +30
@@ -94,7 +94,7 @@ export function scoreCluster(input: ClusterInput, ctx: ScoreContext): RankedClus
   // Publication-safe headline: a verbatim PUBLISHER headline of a real representative. Independent of
   // eligibility (an editor-held or too-old item still has its headline); discovery text never qualifies.
   const hasPublisherHeadline =
-    Boolean(input.canonicalHeadline && input.representativeCandidateId) && input.members.some((m) => m.candidateId === input.representativeCandidateId && m.headlineKind === "publisher-title");
+    publicationHeadline(input) !== null;
   const hasHeadline = hasPublisherHeadline && eligibility.state !== "ineligible";
   const sectionEligibility = assessSections({
     eligibility: eligibility.state,
@@ -150,7 +150,7 @@ export function compareRanked(a: RankedCluster, b: RankedCluster): number {
     b.finalScore - a.finalScore ||
     (SPORT_BASE[b.input.sport] ?? 0) - (SPORT_BASE[a.input.sport] ?? 0) ||
     newestAt(b.input).getTime() - newestAt(a.input).getTime() ||
-    (a.clusterId < b.clusterId ? -1 : 1)
+    a.clusterId.localeCompare(b.clusterId)
   );
 }
 

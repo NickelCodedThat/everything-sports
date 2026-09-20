@@ -346,9 +346,14 @@ the corpus covers ~6 hours, so the series-game / doubleheader risk (§13) is not
   differently. Merge/move tooling repairs it.
 - **Time:** GKG `published_at` is a 15-minute file stamp, so pair distances are coarse.
 - **Discovery text** is not yet linked to the publisher clusters it describes.
-- **Not built:** split tooling, editorial workflow states, ranking, rewritten headlines, summaries, embeddings.
+- **Not built:** split tooling, rewritten headlines, summaries, embeddings. Editorial workflow and ranking are now internal Phase 7 features.
 
-**Next phase — ranking + editorial publication pipeline.** Clusters are the input: rank by `source_count`, freshness,
-sport priority (basketball > football > baseball) and confidence; write original editorial headlines/summaries for the chosen
-representative event; promote to a public `Story` (this is where discovery-text may finally be used as supporting evidence and
-where split tooling and the review queue become an editor's workflow).
+**Phase 7 follow-through:** clusters now feed the internal editorial ranking and review pipeline
+([EDITORIAL-RANKING.md](EDITORIAL-RANKING.md)). It retains verbatim publisher headlines and does not
+invent summaries or publish Stories. Public reads remain fixture-driven.
+
+Ranking validation exposed generalized event-type fixes: injury “out vs/against” phrasing and more
+body parts, coaching “fires” with a coaching/manager object, “interim coach/manager” instead of any
+interim title, and retirement phrases that exclude jersey-number ceremonies. Team tier sets expose
+existing lexicon knowledge to ranking without changing match thresholds. Synthetic regressions cover
+these rules; the existing contradiction and clustering integration suites remain the precision gate.

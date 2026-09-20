@@ -135,3 +135,13 @@ describe("competition tier", () => {
     expect(tier([], "basketball", [], "NCAAB")).toBe("college");
   });
 });
+
+
+describe("stakes context", () => {
+  it.each([
+    "Herons beat Owls on World Series anniversary night",
+    "Herons host Super Bowl reunion before regular season game",
+    "A championship retrospective with former players",
+  ])("does not promote commemorative coverage: %s", headline => expect(hasStakes([headline])).toBe(false));
+  it("still recognizes a current championship alongside a commemoration", () => expect(hasStakes(["World Series anniversary tribute before NBA Finals game"])).toBe(true));
+});

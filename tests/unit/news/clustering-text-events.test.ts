@@ -144,3 +144,21 @@ describe("cluster CLI arguments", () => {
     expect(() => parseWindowMs("2x")).toThrow();
   });
 });
+
+describe("ranking-discovered event typing regressions", () => {
+  it.each([
+    ["Herons forward out vs. Owls with thumb injury", "injury"],
+    ["Ruiz out against Owls with sore foot", "injury"],
+    ["Herons fire head coach after slow start", "coaching"],
+    ["Herons name interim manager", "coaching"],
+    ["Ruiz announces her retirement", "retirement"],
+    ["Ruiz retires from professional basketball", "retirement"],
+  ])("recognizes %s", (headline, type) => expect(classifyEvent(headline, false).type).toBe(type));
+  it.each([
+    ["Ruiz wins interim boxing title", "coaching"],
+    ["Ruiz hat-trick fires Herons past Owls", "coaching"],
+    ["Herons fired up for new season", "coaching"],
+    ["Herons retire her number at halftime", "retirement"],
+    ["Herons retires her number", "retirement"],
+  ])("avoids a false type for %s", (headline, type) => expect(classifyEvent(headline, false).type).not.toBe(type));
+});

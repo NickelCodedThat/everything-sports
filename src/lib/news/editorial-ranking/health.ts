@@ -1,3 +1,4 @@
+import "server-only";
 import type { WarehouseClient } from "../warehouse/client";
 
 export interface EditorialHealth {

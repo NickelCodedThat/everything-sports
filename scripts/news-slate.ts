@@ -20,7 +20,10 @@ loadDotEnvFiles();
 async function main() {
   const options = parseSlateArgs(process.argv.slice(2));
   const client = createWarehouseClient();
-  if (options.refresh) await runEditorialRanking(client, { window: options.window, trigger: "manual" });
+  if (options.refresh) {
+    const report = await runEditorialRanking(client, { window: options.window, trigger: "manual" });
+    if (report.status !== "succeeded") throw new Error(`slate refresh ${report.status}: ${report.errors.join("; ")}`);
+  }
   const { slate, items } = await getSlate(client);
   if (options.json) {
     const sections = Object.fromEntries(

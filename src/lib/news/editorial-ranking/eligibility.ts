@@ -25,6 +25,13 @@ import type { ClusterInput, EditorialStatus, EligibilityReason, EligibilityResul
  * Mixed source quality is fine: one unknown publisher is not a problem; only an ALL-low-quality
  * cluster is held. `quality` is an operational bucket, never a credibility judgment.
  */
+export function publicationHeadline(input: ClusterInput): string | null {
+  const representative = input.members.find((m) => m.candidateId === input.representativeCandidateId);
+  return representative?.headlineKind === "publisher-title" && representative.sourceEnabled &&
+    representative.headline.trim() && representative.headline === input.canonicalHeadline
+    ? representative.headline : null;
+}
+
 export function assessEligibility(input: ClusterInput, now: Date, itemStatus?: EditorialStatus | null): EligibilityResult {
   const reasons: EligibilityReason[] = [];
   const hold = (code: string, detail: string) => reasons.push({ code, severity: "ineligible", detail });
@@ -35,7 +42,7 @@ export function assessEligibility(input: ClusterInput, now: Date, itemStatus?: E
 
   const publisherMembers = input.members.filter((m) => m.headlineKind === "publisher-title");
   if (input.members.length > 0 && publisherMembers.length === 0) hold("discovery-text-only", "every member is provider prose (discovery text) — not a publishable headline");
-  else if (!input.canonicalHeadline || !input.representativeCandidateId) hold("no-publisher-headline", "no representative publisher headline");
+  else if (!publicationHeadline(input)) hold("no-publisher-headline", "no representative publisher headline");
 
   const publisherHeadlines = publisherMembers.map((m) => m.headline);
   if (publisherHeadlines.length > 0 && publisherHeadlines.filter((h) => BETTING_OR_FANTASY.test(h)).length * 2 >= publisherHeadlines.length) {

@@ -21,8 +21,8 @@ export function firstAt(input: ClusterInput): Date {
 }
 
 /**
- * 60 × (0.65·½^(age of newest report / 6h) + 0.35·½^(age of first report / 12h)).
- * A 2h-old event scores ~47; the same event 18h old ~9. A cluster still receiving fresh reports
+ * 60 × (0.5·½^(age of newest report / 6h) + 0.5·½^(age of first report / 10h)).
+ * A 2h-old event scores ~50; the same event 18h old ~12. A cluster still receiving fresh reports
  * stays warm, but a story that broke long ago fades even while it is still being re-reported.
  */
 export function recencyPoints(latestAgeHours: number, eventAgeHours: number): number {
@@ -40,7 +40,7 @@ const logScale = (n: number, saturateAt: number) => (n <= 1 ? 0 : Math.min(1, Ma
 export function domainFirstReports(members: MemberInput[]): Map<string, { firstAt: Date; quality: MemberInput["quality"] }> {
   const byDomain = new Map<string, { firstAt: Date; quality: MemberInput["quality"] }>();
   for (const member of members) {
-    if (!member.sourceEnabled) continue;
+    if (!member.sourceEnabled || !member.domain) continue;
     const current = byDomain.get(member.domain);
     if (!current || member.reportedAt < current.firstAt) byDomain.set(member.domain, { firstAt: member.reportedAt, quality: member.quality });
   }
@@ -119,7 +119,9 @@ const STAKES =
 
 /** High-stakes language present in the headlines. Text evidence only — never invented game-stage data. */
 export function hasStakes(headlines: string[]): boolean {
-  return headlines.some((headline) => STAKES.test(headline));
+  // Commemorations and retrospective coverage do not make today's event a championship.
+  const retrospective = /\b(?:world series|super bowl|(?:nba|wnba|conference) finals|championship|national title)\s+(?:anniversary|reunion|replay|memories|tribute|retrospective)\b/gi;
+  return headlines.some((headline) => STAKES.test(headline.replace(retrospective, "")));
 }
 
 export function eventImportancePoints(eventType: string | null): number {

@@ -10,7 +10,7 @@ real, live sports-news discovery from free sources — as a CLI/dev-only tool, e
 the public homepage, which still reads only the Phase 1 fixture data. Phase 4 adds a **persistent
 news warehouse** (Supabase Postgres) that remembers what the newsroom discovers, and Phase 5 an **automated
 newsroom engine** that ingests on a schedule with health monitoring — all internal, none of it connected to
-the homepage. See
+the homepage. Phase 6 groups story clusters; Phase 7 ranks them into an internal editorial slate. See
 [Phase 1 scope](#phase-1-scope) and [Newsroom](#newsroom-phase-3-multi-source-candidate-discovery)
 below.
 
@@ -81,6 +81,7 @@ src/
       warehouse/           Phase 4 — server-only Supabase persistence (docs/NEWS-WAREHOUSE.md)
       engine/              Phase 5 — scheduled tick, health, GKG lag, worker auth (docs/NEWSROOM-ENGINE.md)
       clustering/          Phase 6 — same-event story clustering, pure scoring + DB orchestration (docs/STORY-CLUSTERING.md)
+      editorial-ranking/   Phase 7 — eligibility, scoring, editor controls and internal slate (docs/EDITORIAL-RANKING.md)
       cli/                 pnpm news:probe's argument parsing + report formatting
       newsroom.ts           the multi-provider aggregator
     ranking/              editorial scoring + sorting, with its own unit tests
@@ -193,7 +194,7 @@ pnpm test:db                        # integration tests against the local databa
 Supabase Cron triggers a secured, server-only Next.js worker (`POST /api/internal/newsroom/tick`) every 15 minutes
 for GDELT GKG (hourly for Wikipedia Current Events; the throttled DOC API is never scheduled). Overlapping runs are
 prevented by a database lease lock, crashed runs are reaped, and provider health/alert conditions are queryable.
-It creates warehouse candidates only — nothing is promoted to a Story or shown on the site. Architecture, security,
+It creates warehouse candidates, then runs clustering and internal editorial ranking. Nothing is published or shown on the site. Architecture, security,
 cadences, runbook and the (single) remote deployment step: [`docs/NEWSROOM-ENGINE.md`](docs/NEWSROOM-ENGINE.md).
 
 ```bash
@@ -229,6 +230,19 @@ The **Wordmark** and **ES Cut** mark (`src/components/brand`) are an **implement
 pass** — plain League Gothic typography and a geometric monogram approximation, not JD's final
 hand-tuned vectors. They're isolated components specifically so the production artwork can drop in
 later without a layout refactor.
+
+## Editorial ranking (Phase 7): internal review and slate
+
+Ranks story clusters with explainable sport/tier/recency/event/source signals, conservative urgency,
+manual controls with audit history, safe source attribution and a unique internal homepage slate.
+The public site remains fixture-driven. Design, exact weights, lifecycle and validation evidence:
+[`docs/EDITORIAL-RANKING.md`](docs/EDITORIAL-RANKING.md).
+
+```bash
+pnpm news:rank --explain             # rank recent clusters; --dry-run writes nothing
+pnpm news:slate --refresh            # refresh and inspect internal placement
+pnpm news:editorial --list           # editor review; --show=<id>, --preview=<id>
+```
 
 ## Phase 1 scope
 

@@ -65,7 +65,7 @@ export interface MappableItem {
  * there is then nothing that may legitimately become a Story.
  */
 export function toStoryPreview(item: MappableItem, sources: SupportingSource[]): StoryPreview | null {
-  if (!item.headline || item.eligibility === "ineligible") return null;
+  if (!item.headline?.trim() || item.eligibility === "ineligible" || item.status === "held" || item.status === "rejected") return null;
   const representative = sources.find((s) => s.isRepresentative) ?? null;
   return {
     editorialItemId: item.id,

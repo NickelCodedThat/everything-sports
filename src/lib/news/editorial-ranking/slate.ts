@@ -1,4 +1,4 @@
-import { DIVERSITY, SECTION, SLATE_DEPTH } from "./config";
+import { DIVERSITY, SECTION, SLATE_DEPTH, SPORT_BASE } from "./config";
 import { contentTokens, jaccard } from "../clustering/text";
 import { DESK_IDS } from "./sections";
 import type { DeskId, Eligibility, EditorialStatus, SlateSectionId, Urgency } from "./types";
@@ -95,7 +95,7 @@ export function buildSlate(items: SlateItem[], options: SlateOptions = {}): Slat
 
   const pool = items
     .filter((item) => item.eligibility !== "ineligible" && item.headline && item.status !== "held" && item.status !== "rejected" && item.status !== "published")
-    .sort((a, b) => b.score - a.score || (a.clusterId < b.clusterId ? -1 : 1));
+    .sort((a, b) => b.score - a.score || (SPORT_BASE[b.sport] ?? 0) - (SPORT_BASE[a.sport] ?? 0) || a.clusterId.localeCompare(b.clusterId));
 
   const used = new Set<string>();
   const sections = Object.fromEntries(SECTION_ORDER.map((id) => [id, [] as SlateEntry[]])) as Record<SlateSectionId, SlateEntry[]>;
@@ -120,13 +120,14 @@ export function buildSlate(items: SlateItem[], options: SlateOptions = {}): Slat
   for (const section of SECTION_ORDER) {
     const limit = depth[section];
     const candidates = pool.filter((item) => !used.has(item.clusterId) && belongsTo(item, section));
-    candidates.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.score - a.score || (a.clusterId < b.clusterId ? -1 : 1));
+    candidates.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.score - a.score || (SPORT_BASE[b.sport] ?? 0) - (SPORT_BASE[a.sport] ?? 0) || a.clusterId.localeCompare(b.clusterId));
     const cross = section === "wire" || section === "now";
     const teamCount = new Map<string, number>();
     const sportCount = new Map<string, number>();
     const typeCount = new Map<string, number>();
 
     for (const item of candidates) {
+      if (used.has(item.clusterId)) continue;
       if (sections[section].length >= limit) break;
       if (section === "now" && item.score < SECTION.now.minScore && !item.pinned) continue;
       const exempt = item.urgency === "breaking-candidate" || item.pinned || (item.urgency !== "normal" && item.sourceCount >= diversity.dominantMinSources);

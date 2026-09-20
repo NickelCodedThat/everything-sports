@@ -35,7 +35,7 @@ export interface UrgencyResult {
  * bodies:
  *
  *   breaking-candidate  a real news event type (trade/signing/injury/coaching/discipline/
- *                       retirement/death/business/draft — never results, previews or records),
+ *                       retirement/death — never results, previews or records),
  *                       HIGH cluster confidence, newest report ≤ 2h old, ≥ 2 independent
  *                       publisher domains, ≥ 2 domains first reporting within the last hour,
  *                       and no rumor/preview/betting language. A single source NEVER qualifies.

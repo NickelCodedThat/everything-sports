@@ -24,7 +24,7 @@ async function main() {
     const { ranked, ...rest } = report;
     console.log(JSON.stringify({ ...rest, ranked: ranked.slice(0, options.top).map(summarizeRanked) }, null, 2));
   } else console.log(formatRankReport(report, { top: options.top, explain: options.explain }));
-  if (report.status === "failed") process.exitCode = 2;
+  if (report.status === "failed" || report.errors.length) process.exitCode = 2;
 }
 
 main().catch((error) => {

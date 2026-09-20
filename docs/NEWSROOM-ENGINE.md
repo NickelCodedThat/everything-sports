@@ -278,3 +278,14 @@ Wikipedia rows only with `includeDiscoveryText`, each `publishable = null`.
 
 ~~Fuzzy same-event clustering~~ — built in Phase 6 ([`STORY-CLUSTERING.md`](STORY-CLUSTERING.md)); the `promoted` status; ranking and
 editorial processing; routing alerts to a notifier; retention jobs; NewsData in production once a key exists.
+
+## Phase 7: editorial ranking after clustering
+
+Successful clustering now invokes `runEditorialRanking` in a separate failure boundary. Its result
+is `TickResult.ranking`; a ranking failure never changes ingestion/clustering success or `ok`.
+The ranker has its own lease, audit table and stale-run reaper (`newsroom-reap-stale-ranking-runs`,
+every ten minutes). `news:health` adds editorial last-success age, counts and warning alerts.
+Including the clustering and ranking reapers, the current scheduler has seven jobs; earlier
+five-job validation above describes the Phase 5 snapshot. No extra ranking ingestion schedule is added.
+See [Editorial ranking](EDITORIAL-RANKING.md) for controls, failure recovery and internal read models.
+The public application continues to read fixtures.

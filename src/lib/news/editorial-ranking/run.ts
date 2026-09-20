@@ -1,3 +1,4 @@
+import "server-only";
 import { randomUUID } from "node:crypto";
 import type { WarehouseClient } from "../warehouse/client";
 import { releaseLock, tryAcquireLock } from "../warehouse/engine-db";
@@ -40,11 +41,16 @@ export interface RankRunReport {
 }
 
 /** The persisted shape of one ranked cluster (see editorial_upsert_items). */
-export function toItemPayload(ranked: RankedCluster, existingStatus: EditorialStatus | undefined) {
+export function toItemPayload(
+  ranked: RankedCluster,
+  existingStatus: EditorialStatus | undefined,
+) {
   const { input } = ranked;
   return {
     cluster_id: ranked.clusterId,
-    initial_status: existingStatus ?? (ranked.eligibility.state === "review" ? "review" : "candidate"),
+    initial_status:
+      existingStatus ??
+      (ranked.eligibility.state === "review" ? "review" : "candidate"),
     headline: ranked.headline,
     sport: input.sport,
     league: input.league,
@@ -54,11 +60,23 @@ export function toItemPayload(ranked: RankedCluster, existingStatus: EditorialSt
     editorial_priority: ranked.priority,
     rank_position: ranked.position,
     section: ranked.desk,
-    section_eligibility: { lead: ranked.sectionEligibility.lead, wire: ranked.sectionEligibility.wire, now: ranked.sectionEligibility.now, desk: ranked.sectionEligibility.desk, notes: ranked.sectionEligibility.notes },
+    section_eligibility: {
+      lead: ranked.sectionEligibility.lead,
+      wire: ranked.sectionEligibility.wire,
+      now: ranked.sectionEligibility.now,
+      desk: ranked.sectionEligibility.desk,
+      notes: ranked.sectionEligibility.notes,
+    },
     eligibility: ranked.eligibility.state,
     eligibility_reasons: ranked.eligibility.reasons,
     score_parts: ranked.scoreParts,
-    active_overrides: ranked.overrides.map((o) => ({ id: o.id, kind: o.kind, amount: o.amount, text: o.text, reason: o.reason })),
+    active_overrides: ranked.overrides.map((o) => ({
+      id: o.id,
+      kind: o.kind,
+      amount: o.amount,
+      text: o.text,
+      reason: o.reason,
+    })),
     representative_candidate_id: input.representativeCandidateId,
     cluster_confidence: input.confidence,
     candidate_count: input.candidateCount,
@@ -81,7 +99,10 @@ export function toItemPayload(ranked: RankedCluster, existingStatus: EditorialSt
  * row). Derived data — a failure here is recorded in `editorial_ranking_runs` and never touches
  * ingestion or clustering.
  */
-export async function runEditorialRanking(client: WarehouseClient, options: RankRunOptions = {}): Promise<RankRunReport> {
+export async function runEditorialRanking(
+  client: WarehouseClient,
+  options: RankRunOptions = {},
+): Promise<RankRunReport> {
   const started = Date.now();
   const window = options.window ?? DEFAULT_RANK_WINDOW;
   const dryRun = options.dryRun ?? false;
@@ -107,8 +128,18 @@ export async function runEditorialRanking(client: WarehouseClient, options: Rank
 
   const holder = randomUUID();
   if (!dryRun) {
-    await client.rpc("news_reap_stale_ranking_runs", { p_stale_after: `${RANK_STALE_RUN_MINUTES} minutes` });
-    if (!(await tryAcquireLock(client, RANK_LOCK_KEY, holder, RANK_LOCK_TTL_MINUTES))) {
+    const { error } = await client.rpc("news_reap_stale_ranking_runs", {
+      p_stale_after: `${RANK_STALE_RUN_MINUTES} minutes`,
+    });
+    if (error) throw new Error(`ranking recovery failed: ${error.message}`);
+    if (
+      !(await tryAcquireLock(
+        client,
+        RANK_LOCK_KEY,
+        holder,
+        RANK_LOCK_TTL_MINUTES,
+      ))
+    ) {
       report.status = "skipped-locked";
       report.durationMs = Date.now() - started;
       return report;
@@ -119,33 +150,61 @@ export async function runEditorialRanking(client: WarehouseClient, options: Rank
     if (!dryRun) {
       const { data, error } = await client
         .from("editorial_ranking_runs")
-        .insert({ trigger: options.trigger ?? "manual", algorithm_version: ALGORITHM_VERSION, window_label: window, sport_filter: options.sport ?? null })
+        .insert({
+          trigger: options.trigger ?? "manual",
+          algorithm_version: ALGORITHM_VERSION,
+          window_label: window,
+          sport_filter: options.sport ?? null,
+        })
         .select("id")
         .single();
-      if (error) throw new Error(`starting ranking run failed: ${error.message}`);
+      if (error)
+        throw new Error(`starting ranking run failed: ${error.message}`);
       report.runId = data.id;
     }
 
-    const inputs = await loadClusterInputs(client, { since, sport: options.sport });
+    const inputs = await loadClusterInputs(client, {
+      since,
+      sport: options.sport,
+    });
     const state = await loadEditorialState(client);
-    const ranked = rankClusters(inputs, { now, overridesByCluster: state.overridesByCluster, statusByCluster: state.statusByCluster });
+    const ranked = rankClusters(inputs, {
+      now,
+      overridesByCluster: state.overridesByCluster,
+      statusByCluster: state.statusByCluster,
+    });
     report.ranked = ranked;
     report.considered = ranked.length;
-    report.eligible = ranked.filter((r) => r.eligibility.state === "eligible").length;
-    report.review = ranked.filter((r) => r.eligibility.state === "review").length;
-    report.held = ranked.filter((r) => r.eligibility.state === "ineligible").length;
+    report.eligible = ranked.filter(
+      (r) => r.eligibility.state === "eligible",
+    ).length;
+    report.review = ranked.filter(
+      (r) => r.eligibility.state === "review",
+    ).length;
+    report.held = ranked.filter(
+      (r) => r.eligibility.state === "ineligible",
+    ).length;
 
     if (!dryRun) {
       for (let i = 0; i < ranked.length; i += UPSERT_CHUNK) {
-        const chunk = ranked.slice(i, i + UPSERT_CHUNK).map((r) => toItemPayload(r, state.statusByCluster.get(r.clusterId)));
-        const { data, error } = await client.rpc("editorial_upsert_items", { p_run_id: report.runId!, p_items: chunk as never });
-        if (error) throw new Error(`editorial_upsert_items failed: ${error.message}`);
+        const chunk = ranked
+          .slice(i, i + UPSERT_CHUNK)
+          .map((r) => toItemPayload(r, state.statusByCluster.get(r.clusterId)));
+        const { data, error } = await client.rpc("editorial_upsert_items", {
+          p_run_id: report.runId!,
+          p_items: chunk as never,
+        });
+        if (error)
+          throw new Error(`editorial_upsert_items failed: ${error.message}`);
         const counts = data as { created: number; updated: number };
         report.itemsCreated += counts.created;
         report.itemsUpdated += counts.updated;
       }
-      const { error } = await client.rpc("editorial_finish_rank", { p_run_id: report.runId! });
-      if (error) throw new Error(`editorial_finish_rank failed: ${error.message}`);
+      const { error } = await client.rpc("editorial_finish_rank", {
+        p_run_id: report.runId!,
+      });
+      if (error)
+        throw new Error(`editorial_finish_rank failed: ${error.message}`);
     }
   } catch (error) {
     report.status = dryRun ? "dry-run" : "failed";
@@ -154,7 +213,7 @@ export async function runEditorialRanking(client: WarehouseClient, options: Rank
     report.durationMs = Date.now() - started;
     if (!dryRun) {
       if (report.runId) {
-        await client
+        const { error } = await client
           .from("editorial_ranking_runs")
           .update({
             status: report.status === "failed" ? "failed" : "succeeded",
@@ -165,10 +224,25 @@ export async function runEditorialRanking(client: WarehouseClient, options: Rank
             held_count: report.held,
             items_created: report.itemsCreated,
             items_updated: report.itemsUpdated,
-            error_message: report.errors.length ? report.errors[0].slice(0, 1000) : null,
-            metadata: report.ranked[0] ? { top: { cluster_id: report.ranked[0].clusterId, score: report.ranked[0].finalScore } } : {},
+            error_message: report.errors.length
+              ? report.errors[0].slice(0, 1000)
+              : null,
+            metadata: report.ranked[0]
+              ? {
+                  top: {
+                    cluster_id: report.ranked[0].clusterId,
+                    score: report.ranked[0].finalScore,
+                  },
+                }
+              : {},
           })
           .eq("id", report.runId);
+        if (error) {
+          report.status = "failed";
+          report.errors.push(
+            `finishing ranking audit failed: ${error.message}`,
+          );
+        }
       }
       await releaseLock(client, RANK_LOCK_KEY, holder).catch(() => undefined);
     }
