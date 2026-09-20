@@ -59,3 +59,16 @@ describe("extractDomain", () => {
     expect(extractDomain("not a url")).toBeUndefined();
   });
 });
+
+describe("normalizeUrl — additional tracking parameters", () => {
+  it("strips real-world tracking params so the same article dedupes across syndicated links", () => {
+    const base = "https://example.com/story";
+    for (const param of ["ocid", "ncid", "cmpid", "igshid", "ref_src", "mkt_tok", "yclid", "msclkid"]) {
+      expect(normalizeUrl(`${base}?${param}=abc`)?.href).toBe(base);
+    }
+  });
+
+  it("keeps meaningful query params (e.g. article ids)", () => {
+    expect(normalizeUrl("https://example.com/story?id=42&ocid=x")?.href).toBe("https://example.com/story?id=42");
+  });
+});

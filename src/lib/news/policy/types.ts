@@ -1,6 +1,6 @@
 export type PolicyStatus = "approved" | "development-only" | "deferred" | "rejected";
 
-export type Freshness = "realtime" | "near-realtime" | "delayed-12h" | "unknown";
+export type Freshness = "realtime" | "near-realtime" | "delayed-12h" | "daily-curated" | "unknown";
 
 /**
  * A machine-readable record of what our system is allowed to do with a given

@@ -2,6 +2,7 @@ import type { Sport } from "@/types/sport";
 import { classifyCandidate } from "../classification/classify";
 import { fingerprintCandidate } from "../candidates/fingerprint";
 import { normalizeUrl } from "../urls/normalize";
+import { assessSourceQuality } from "../sources/quality";
 import { getProviderPolicy } from "../policy/registry";
 import type { CandidateImageRef, NewsCandidate, NewsProviderId } from "../candidates/types";
 
@@ -18,7 +19,12 @@ export interface RawCandidateInput {
   providerCategories?: string[];
   snippet?: string;
   imageRef?: CandidateImageRef;
-  queryProfileSport: Sport;
+  /** The per-sport query profile that discovered this item; omit for feed-style providers with no sport query. */
+  queryProfileSport?: Sport;
+  /** Label recorded as `queryProfile` when there is no query sport (e.g. "current-events"). */
+  queryProfileLabel?: string;
+  /** Extra text scanned for classification signals but never stored (e.g. a parent event title). */
+  classificationContext?: string;
   possibleLeague?: string;
 }
 
@@ -51,6 +57,7 @@ export function buildCandidate(input: RawCandidateInput): NewsCandidate | null {
     headline,
     queryProfileSport: input.queryProfileSport,
     providerCategories: input.providerCategories,
+    context: input.classificationContext,
   });
 
   const candidate: NewsCandidate = {
@@ -68,7 +75,8 @@ export function buildCandidate(input: RawCandidateInput): NewsCandidate | null {
     possibleSport: classification.sport === "unknown" ? undefined : classification.sport,
     possibleLeague: input.possibleLeague,
     providerCategories: input.providerCategories,
-    queryProfile: input.queryProfileSport,
+    sourceQuality: assessSourceQuality(publisherDomain),
+    queryProfile: input.queryProfileSport ?? input.queryProfileLabel ?? "unscoped",
     classification,
   };
 

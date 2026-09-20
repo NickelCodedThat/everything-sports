@@ -28,3 +28,18 @@ describe("buildGdeltQuery", () => {
     expect(buildGdeltQuery("other")).toBeNull();
   });
 });
+
+describe("query profile guardrails (2026-09-20 live evidence)", () => {
+  it("never queries with bare 'football' — a raw 'football' sample was ~48% school-athletics pages, not NFL/college news", async () => {
+    const { SPORT_QUERY_PROFILES } = await import("@/lib/news/queries/sport-profiles");
+    const terms = SPORT_QUERY_PROFILES.football?.terms.map((t) => t.toLowerCase()) ?? [];
+    expect(terms).not.toContain("football");
+    expect(terms).toEqual(expect.arrayContaining(["nfl", "college football"]));
+  });
+
+  it("keeps league-specific terms for basketball and baseball", async () => {
+    const { SPORT_QUERY_PROFILES } = await import("@/lib/news/queries/sport-profiles");
+    expect(SPORT_QUERY_PROFILES.basketball?.terms).toEqual(expect.arrayContaining(["NBA", "WNBA", "college basketball"]));
+    expect(SPORT_QUERY_PROFILES.baseball?.terms).toEqual(expect.arrayContaining(["MLB", "Major League Baseball"]));
+  });
+});

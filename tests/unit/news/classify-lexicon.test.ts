@@ -1,0 +1,105 @@
+import { describe, expect, it } from "vitest";
+import { classifyCandidate } from "@/lib/news/classification/classify";
+
+/** Regression coverage for classification weaknesses found in the 2026-09-20 live samples. */
+describe("classifyCandidate — lexicon tuning from real data", () => {
+  it("lifts MLB headlines that name teams and play-by-play language but never say 'MLB'", () => {
+    const result = classifyCandidate({
+      headline: "Acuña grand slam leads Braves to 6-3 win, dropping Astros from AL West lead",
+      queryProfileSport: "baseball",
+    });
+    expect(result.sport).toBe("baseball");
+    expect(result.confidence).toBe("medium");
+    expect(result.signals.join(" ")).toMatch(/team\/vocabulary/);
+  });
+
+  it("gives WNBA-style headlines that only carry two weak hints medium confidence", () => {
+    const result = classifyCandidate({ headline: "Dream 106-81 Sky (Sep 19, 2026) Game Recap", queryProfileSport: "basketball" });
+    expect(result.confidence).toBe("medium");
+  });
+
+  it("gives college-football matchups with two program names medium confidence", () => {
+    const result = classifyCandidate({
+      headline: "No. 10 Alabama rallies to beat Florida State in offensive thriller",
+      queryProfileSport: "football",
+    });
+    expect(result.confidence).toBe("medium");
+  });
+
+  it("leaves a lone weak hint or a bare query origin at low confidence", () => {
+    expect(classifyCandidate({ headline: "Chris Paul reveals how he kept his edge", queryProfileSport: "basketball" }).confidence).toBe("low");
+    expect(classifyCandidate({ headline: "Giants fans line up early", queryProfileSport: "baseball" }).confidence).toBe("low");
+  });
+
+  it("never lets a weak hint move a candidate off the sport that discovered it", () => {
+    // 'Giants' is a weak hint for both NFL and MLB — the baseball query origin must survive.
+    const result = classifyCandidate({ headline: "Giants rally in ninth to top Dodgers", queryProfileSport: "baseball" });
+    expect(result.sport).toBe("baseball");
+  });
+
+  it("does not read the Nigerian Bar Association's 'NBA' as basketball", () => {
+    const result = classifyCandidate({
+      headline: "NBA demands probe into deaths of 37 illegal miners in Niger",
+      queryProfileSport: "basketball",
+    });
+    expect(result.confidence).not.toBe("high");
+    expect(result.signals.join(" ")).not.toMatch(/league terms: NBA/);
+  });
+
+  it("does not read 'Special Olympics' as the Olympics", () => {
+    const result = classifyCandidate({ headline: "Special Olympics Kentucky Truck Pull raises more than $35,000" });
+    expect(result.sport).toBe("unknown");
+  });
+
+  it("does not treat the SEC as the football conference in securities-regulator headlines", () => {
+    const result = classifyCandidate({ headline: "SEC charges founder of crypto firm with fraud against investors" });
+    expect(result.sport).toBe("unknown");
+  });
+
+  it("matches team nicknames case-sensitively so ordinary words don't read as NFL", () => {
+    expect(classifyCandidate({ headline: "Congress debates new bills on rising energy bears" }).sport).toBe("unknown");
+    expect(classifyCandidate({ headline: "Bills and Dolphins meet in Miami" }).sport).toBe("football");
+  });
+
+  it("matches 'WNBA' as its own token, not as an 'NBA' substring", () => {
+    const result = classifyCandidate({ headline: "WNBA playoff picture: eight teams still alive", queryProfileSport: "basketball" });
+    expect(result.signals.join(" ")).toMatch(/WNBA/);
+    expect(result.signals.join(" ")).not.toMatch(/league terms: NBA,/);
+  });
+
+  it("flags contradictory-sport vocabulary and downgrades an otherwise-high result", () => {
+    const result = classifyCandidate({
+      headline: "NFL kicker moonlights as striker in charity match",
+      queryProfileSport: "football",
+    });
+    expect(result.signals.some((s) => s.startsWith("contradictory signal"))).toBe(true);
+    expect(result.confidence).toBe("medium");
+  });
+
+  describe("with no query origin (feed-style providers)", () => {
+    it("classifies from league terms alone", () => {
+      const result = classifyCandidate({ headline: "Stefon Diggs fined $15,000 by the NFL" });
+      expect(result.sport).toBe("football");
+      expect(result.confidence).toBe("high");
+    });
+
+    it("needs two distinct team hits when no league term is present", () => {
+      expect(classifyCandidate({ headline: "Cubs come through in late innings, top Reds" }).sport).toBe("baseball");
+      expect(classifyCandidate({ headline: "Yankees let lead slip away" }).sport).toBe("unknown");
+    });
+
+    it("uses parent-event context (Wikipedia Current Events) for classification", () => {
+      const result = classifyCandidate({
+        headline: "Atlanta player becomes first to reach 500 rebounds in a single season.",
+        context: "2026 WNBA season",
+      });
+      expect(result.sport).toBe("basketball");
+    });
+
+    it("returns unknown/none rather than guessing", () => {
+      const result = classifyCandidate({ headline: "Japanese triathlete wins the first gold medal of the Asian Games" });
+      expect(result).toMatchObject({ sport: "unknown", confidence: "none" });
+      expect(result.signals.length).toBeGreaterThan(0);
+    });
+  });
+});

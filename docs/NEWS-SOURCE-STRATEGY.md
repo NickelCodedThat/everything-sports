@@ -1,6 +1,6 @@
 # News Source Strategy
 
-**Status:** Phase 3 — Multi-Source Live Newsroom Foundation
+**Status:** Phase 3 — Multi-Source Live Newsroom Foundation, live-validated and hardened 2026-09-20 (section 15)
 **Scope:** how Everything Sports discovers real sports news without paying for a news API, and the
 rules governing what we're allowed to do with what we discover.
 
@@ -128,6 +128,9 @@ Evaluated and given policy records, but **not** wired into any `CandidateProvide
 | NewsAPI.org (free) | `rejected` | Free tier is explicitly a development/testing tier; disallows production use. |
 | Currents API | `deferred` | Current terms appear to conflict with parts of our planned long-term permanent warehouse/derivative-works workflow — revisit after a further rights review, not a permanent no. |
 | ESPN RSS | `rejected` | Display/modification/advertising restrictions make it unsuitable as a foundational monetizable feed. |
+| Publisher / team RSS (Fox Sports, CNN, NFL team sites, CBS Sports) | `rejected` | Fox Sports and team feeds are "free … for individuals and non-profit organizations for non-commercial use"; CNN bars advertising alongside RSS content; CBS Sports has no RSS-specific commercial grant (ambiguous → restrictive). Reviewed 2026-09-20. |
+| Google News RSS / Bing News RSS | `rejected` | Unofficial feeds with no commercial-aggregation grant; ambiguous → restrictive. Used only as a small internal engineering sample (section 15), never as a source. |
+| Wikinews | `deferred` | License is fine (CC BY) but live check found sports posts weeks apart and mostly amateur soccer — not useful. |
 
 Reconsidering any of these requires updating its policy record after an actual terms review, not
 just flipping a status flag.
@@ -141,7 +144,7 @@ pnpm news:probe --provider=all --json                              # structured 
 pnpm news:probe --provider=local --sport=basketball                # offline, no network — exercises the pipeline against fixture data
 ```
 
-Flags: `--provider=gdelt|newsdata|local|all` (default `all` — every **approved** real provider;
+Flags: `--provider=gdelt|gdelt-gkg|newsdata|wikipedia-events|local|all` (default `all` — every **approved** real provider;
 `local` is an offline diagnostic provider and is deliberately excluded from `all`), `--sport=<sport
 name>|all` (default `all`), `--window=<e.g. 3h, 1d>` (default `3h`), `--limit=<n>` (default `25`,
 applied per sport query profile), `--json`.
@@ -149,10 +152,13 @@ applied per sport query profile), `--json`.
 Output shows, per candidate: provider, sport + confidence, publisher, published time, headline,
 source URL, classification signals, and fingerprint (flagged if it's an exact-URL duplicate within
 the batch) — never an article body, never a secret. It ends with a newsroom health summary:
-per-provider candidate/failure counts, totals by classified sport, and a duplicate count.
+per-provider health (OK / OK-but-empty / UNAVAILABLE / THROTTLED / ERROR, with accepted-of-returned
+counts), totals by classified sport, the duplicate count, and every candidate the intake filter rejected
+with its reason (section 16).
 
-If `NEWSDATA_API_KEY` isn't configured, NewsData reports `unavailable` in the summary; the command
-still exits successfully with GDELT's results.
+If `NEWSDATA_API_KEY` isn't configured, NewsData reports `unavailable` in the summary; if GDELT is
+throttled it reports `throttled`; the command still exits successfully with whatever the other
+providers returned.
 
 ## 12. NewsData environment configuration
 
@@ -182,6 +188,9 @@ pass first.
 
 ## 14. Future provider adapter strategy
 
+Section 15 shows this working: `gdelt-gkg` and `wikipedia-events` were added without touching the
+aggregator's provider-specific code.
+
 Every provider implements the same `CandidateProvider` interface
 (`src/lib/news/providers/types.ts`): `id`, `displayName`, `requiresApiKey`, `expectedFreshness`,
 `fetchCandidates()`. Adding a future provider (a paid API once justified, a new free source, etc.)
@@ -190,3 +199,199 @@ implement `client.ts` (raw fetch) + `normalize.ts` (mapping into `NewsCandidate`
 `buildCandidate` helper) + `provider.ts` (the `CandidateProvider` object) under
 `src/lib/news/providers/<name>/`, and register it in `src/lib/news/providers/index.ts`. Nothing
 else in the aggregator, CLI, or classification layer needs to know a new provider exists.
+
+## 15. Live validation — 2026-09-20
+
+All numbers below are from real network runs on 2026-09-20 (US, NFL Week 2 / MLB pennant race / WNBA
+playoffs / NBA offseason), run by the engineering side with no owner involvement. Reproduce with
+`pnpm news:probe --provider=all --window=6h --limit=50`.
+
+### 15.1 Provider reliability findings
+
+| Provider | Result on 2026-09-20 | Detail |
+| --- | --- | --- |
+| **GDELT DOC 2.0 API** | **Throttled (HTTP 429), every attempt** | 4 requests over ~25 minutes from this machine, each answered 429 in 9–10 s, including a single-query request with no other traffic beforehand. The throttle is per-IP and outlasts the documented "1 request / 5 s" spacing, so waiting a few seconds does not clear it. Marked operationally degraded for the session; not retried in a loop. |
+| **GDELT GKG 15-minute files** | **Validated live** | `data.gdeltproject.org/gdeltv2/…gkg.csv.zip` — ~2 MB, ~0.6 s each, no throttling across ~90 downloads. 6 h window: ~11k titled rows → 137–149 sports candidates in 18 s. Same GDELT project and terms as the DOC API, different (plain-file) path. |
+| **Wikipedia Current Events** | **Validated live** | MediaWiki parse API, ~0.3 s/request. Editor-curated, so volume is small: 4 items across 3 days on the day of the run (0–8 per day over the prior week), each with a real publisher URL. |
+| NewsData.io | Unavailable | No `NEWSDATA_API_KEY` exists locally. Adapter intact and unit-tested (incl. 429 → `throttled`); not validated live. |
+
+**Conclusion:** the DOC API cannot be the only freshness source. GKG files are a much better GDELT
+integration for a scheduled ingester (bulk files, no per-query throttle); the DOC API is kept as
+an on-demand query path behind a cooldown.
+
+### 15.2 How GDELT throttling now behaves
+
+- `429` (or a `200` plain-text "please limit requests" body) raises a typed `ProviderRateLimitedError`.
+- The provider **stops immediately** — a probe that would have issued 11 sequential sport queries
+  now issues exactly 1 — and reports `throttled` (not `error`).
+- A 60 s in-process **cooldown** (longer if `Retry-After` says so) makes further calls return
+  `throttled` without touching the network. There are no retry loops.
+- The same typed handling exists for NewsData and the Wikipedia/GKG providers.
+
+### 15.3 Data sources for the quality inspection
+
+- **Approved live providers (production-eligible):** `gdelt-gkg` (6 h, 137–149 candidates, ~10 min old
+  at the newest) and `wikipedia-events`.
+- **Engineering sample only:** because GKG's sports volume is thin for basketball in the September
+  NBA offseason and Wikipedia is thin by design, a one-off sample of **300 headlines** (100 each for
+  the basketball / football / baseball query profiles) was pulled from Google News RSS to stress-test
+  classification and filtering at the 20–50-per-sport scale the task called for. Google News RSS is
+  **not** an approved provider (policy: `rejected`, ambiguous terms), nothing from it is stored in
+  the repository, and no test or code path depends on it. Its role was to expose failure *patterns*;
+  the regression tests use verbatim headlines that illustrate each pattern.
+
+### 15.4 Candidate quality, per sport
+
+Numbers are from the 300-headline sample unless noted "GKG". "Before" = the Phase 3 classifier with no
+intake filter; "after" = this change.
+
+**Basketball** (NBA / WNBA / college basketball) — *good relevance, heavy betting noise.*
+Before: 82 high / 18 low. Filter rejected 18 of 100 (7 game-stub/schedule pages such as *"Charlotte
+Hornets vs LA Clippers Nov 15, 2026 Game Summary"* — future-dated schedule pages, plus 1 generic ESPN
+landing page — 8 template pages in all; 7 betting/DFS pages; 3 video-clip pages). After: 82 accepted → 74 high / 6 medium / 2
+low. Zero soccer or other-sport contamination. Sources dominated by Yahoo Sports (30), si.com, NBA.com.
+GKG (6 h, offseason): only 9 basketball candidates — WNBA playoffs plus NBA business/draft items — all
+relevant, except the false positive in 15.5.
+
+**Football** (NFL / college football) — *highest betting/fantasy load; no soccer flood.*
+Before: 92 high / 8 low. Filter rejected 16 of 100: 14 betting/fantasy/props/DFS pages (4 of the 16 also came from
+betting-affiliate domains, one of them caught only by its domain), 1 historical-stats page. After: 84 accepted → 77 high / 7 medium / 0
+low. The eight low-confidence headlines (college-football matchups like *"No. 10 Alabama rallies to
+beat Florida State"*, NFL headlines naming only teams/positions) now score medium via the team/school
+lexicon. A **raw "football" query** (not used, run only as a control) returned 48 of 100 results from
+school-athletics sites (`12thman.com`, `floridagators.com`, …) and zero NFL; zero soccer in the US-edition
+sample — soccer contamination would appear on GDELT's global index, so the profile still never uses
+bare "football" (locked by a test). GKG: 42 accepted.
+
+**Baseball** (MLB) — *cleanest sources, worst classification signal.*
+Before: **26 high / 74 low** — MLB.com headlines are player/team-centric and rarely say "MLB". Filter
+rejected 24 of 100 (10 MLB.com *"… Preview - 09/20/2026"* pages and 1 game-story template page, 9
+video clips — 7 *"Condensed Game"*, 2 *"Field View"* — 3 Spanish-language *"Resumen …"* clips, 1 odds page). After: 76 accepted → 25 high / 26 medium / 25 low. The remaining "low"
+are player-only headlines (*"Joe Ryan strikes out five"*, *"Pedro Pagés RBI single"*) — MLB.com video
+titles — which no deterministic headline lexicon can fix without roster data. GKG: 50 accepted (cap),
+but only 21 distinct headlines (15.6).
+
+### 15.5 Concrete junk and false-positive examples (all real)
+
+| Class | Example | Handling |
+| --- | --- | --- |
+| Betting / props / DFS | *"Storm vs Valkyries Prediction, Pick, WNBA Odds for Saturday"*; *"NFL Touchdown Parlay Week 2: …"*; *"FanDuel Promo Code: Claim $350 Bonus Bets …"* | `betting-or-fantasy` |
+| Fantasy | *"2026 Fantasy Football Injury Tracker"* | `betting-or-fantasy` |
+| Schedule/preview stubs | *"Toronto Blue Jays at Texas Rangers Preview - 09/20/2026"*; *"San Francisco 49ers vs. Miami Dolphins - September 20, 2026"* | `template-page` |
+| Future-dated pages | *"Washington Wizards vs Denver Nuggets Jan 21, 2027 Game Summary"* (published 2026-09-19) | `template-page` |
+| Generic landing page | *"Watch ESPN - Stream Live Sports & ESPN Originals"* | `template-page` |
+| Video clips | *"Condensed Game: PHI@NYM - 9/19/26"*, *"HLs: Bueckers in playoff form …"* | `video-page` |
+| Non-English | *"Resumen Cachorros @ Rojos, Resultados/Jugadas destacadas"* (Spanish, from an "English" query) | `non-english` |
+| Historical stats page | *"Stan Hindman 1966 Situational Stats"* | `historical-stats-page` |
+| Betting-affiliate domain | covers.com, prizepicks.com, DraftKings, FanDuel | `low-quality-source` |
+| Acronym collision | GKG: *"NBA demands probe into deaths of 37 illegal miners in Niger"* — Nigerian Bar Association, classified basketball/**high** | fixed: `AMBIGUOUS_TERM_GUARDS` |
+| Phrase collision | GKG: *"Special Olympics Kentucky Truck Pull …"* classified olympics/high | fixed: neutralized phrase |
+| Site-name suffix | GKG titles: *"… \| 107.5 The Game (WNKT-FM)"*, *"… – KTBB News, Weather, Ta…"* | fixed: `stripSiteSuffix` |
+| Common-word nicknames | *"Congress debates new bills"* would hit the Bills | fixed: nicknames match case-sensitively; 2 hits needed without a query origin |
+| **Still wrong** | GKG: *"Caitlin Clark shows off new Nike signature shoe … inspired by favorite NFL team"* — WNBA story classified football/high because it mentions the NFL | Known weakness (15.8) |
+
+### 15.6 Same-event duplicates (input for Phase 4/5 clustering)
+
+Exact-URL duplicates were **zero** in every run; same-*event* duplication is massive:
+
+- **Wire syndication (GKG):** the identical headline appears on many local sites — *"Ravens rule out star
+  WR Zay Flowers (hamstring) vs. Saints"* on 13 domains; *"Ronald Acuna Jr.'s late grand slam leads
+  Braves past Astros"* on 8; *"Cubs come through in late innings, top Reds"* on 7. Across the 6 h GKG
+  run, **137 accepted candidates were only 89 distinct headlines**. An exact normalized-headline group
+  is therefore a cheap, high-yield first clustering step.
+- **Multi-publisher, different wording (sample):** Angel Reese's 500-rebound record — Bleacher Report,
+  Yahoo Sports (×3 headlines), USA Today, SLAM: *"Angel Reese Becomes First WNBA Player to Reach 500
+  Rebounds…"* vs *"Angel Reese makes WNBA history (again!) with 500 rebounds in a season"*. The NFL
+  videoboard rule change — ESPN, Bleacher Report, Yahoo, Boston.com. Weekly injury reports — NBC Sports vs
+  CBS Sports. Wikipedia Current Events yields this shape by design: one event, several cited publishers.
+- Also observed: the same article via different tracking parameters (`ocid`, `cmpid`, …) — now stripped
+  before fingerprinting.
+
+### 15.7 Changes made from this evidence
+
+**Queries** — deliberately *not* widened. The tuned profiles (NBA/WNBA/college basketball; NFL/college
+football; MLB/Major League Baseball) produced relevant results in every sample; the problems were
+downstream (team-only headlines, junk pages). Added a test that the football profile never contains bare
+"football" and that basketball/baseball keep their league terms. Overfitting the terms to one September
+weekend (e.g. adding playoff phrases) was rejected as unsupported by the data.
+
+**Classification** (`classification/lexicon.ts`, `classify.ts`) — still fully deterministic and
+inspectable (signals list every hit and tier):
+- Three evidence tiers: **strong** (league/event tokens: NBA, WNBA, NFL, MLB, World Series, Super Bowl,
+  Heisman…), **team** (NBA/WNBA/NFL/MLB nicknames, sport vocabulary), **weak** (common-word nicknames,
+  college programs, "RBI"…). Only strong/team evidence can move a candidate off its query sport.
+- `high` = league-level evidence and no contradiction; `medium` = team/vocabulary evidence or two weak
+  hints; `low` = query origin only or one weak hint. New **contradictory signal** lines (rival sport
+  present; soccer/hockey vocabulary) downgrade `high` to `medium`.
+- Whole-word matching (fixes "NBA" inside "WNBA"), case-sensitive nicknames, ambiguous-acronym guards
+  (NBA/SEC/ACC/FBS), neutralized phrases ("Special Olympics").
+- **Query-origin-less classification** for feed-style providers (Wikipedia, GKG): needs a league term or
+  two distinct team/vocabulary hits; otherwise `unknown`/`none`.
+
+**Intake filter** (`filters/intake.ts`) — nine named rules, each traced to a real example above.
+Rejections are returned and printed with reasons, never silently dropped. Conservative by design: it does
+not reject "draft picks", "way-too-early predictions", or "beat the odds".
+
+**Source quality** (`sources/quality.ts`) — `known` / `unknown` / `low-quality`, ~35 known publisher/league
+domains, ~13 betting-affiliate domains. Operational only, no editorial or political meaning. It earned its
+place: it caught 4 of the 16 football rejections in the sample and all 3 sportsbook promo-code pages
+(Bet365, COVERS, FanDuel) in the GKG run — one of them ("Bet365 Bonus Code…") matched no headline rule.
+
+### 15.8 Known weaknesses
+
+- **Incidental league mentions** (the Caitlin Clark/NFL example) — headline-only classification can't tell
+  the subject from an aside. Needs clustering + a second opinion (e.g. the article's own section/keywords).
+- **Player-only headlines** (MLB.com video titles) stay `low`; fixing that needs roster data or an LLM
+  pass, both out of scope.
+- **Wikipedia items are sentences, not headlines**, are CC BY-SA, and carry day-level timestamps; they
+  are an internal discovery signal, not display text (policy: `headlineDisplayAllowed: false`).
+- **GKG titles are HTML `<title>`s**, sometimes truncated at ~100 characters, with residual site suffixes
+  the heuristic doesn't catch. No article-level language field other than the translation flag.
+- **GKG volume is a sample of the global feed** (~11k titled rows / 6 h), so it under-covers niche sports
+  and off-season leagues (9 basketball items in 6 h in September).
+- **Intake filtering is headline/URL pattern based** and English/US-centric; betting news that is
+  genuinely news (e.g. a sportsbook regulatory story) will be rejected by design until a human-review lane
+  exists.
+- Live behavior of NewsData is still unvalidated (no key).
+- The GDELT DOC throttle window is unknown; the cooldown is a fixed 60 s and process-local.
+
+### 15.9 Recommendations
+
+1. Make **GKG + Wikipedia** the always-on discovery baseline; keep the DOC API as an opportunistic
+   query path behind its cooldown; add NewsData when a free key exists.
+2. In the warehouse phase, dedupe first on **exact normalized headline** (137 → 89 in one run), then
+   on shared cited-URL/event signals, then on fuzzy same-event matching (Phase 4/5).
+3. Ingest GKG on a 15-minute schedule keyed on the file stamp (idempotent; the files never change) rather
+   than by time window.
+4. Add a per-publisher allow/deny list to the warehouse admin rather than growing the code lists.
+5. Re-run this validation in-season for basketball (October–June) before setting basketball ranking
+   thresholds; September data under-represents it.
+
+## 16. Intake filtering, health states, and failover
+
+**Provider states** (`ProviderHealth.state`): `ok`, `empty` (succeeded, zero candidates), `unavailable`
+(not configured — e.g. no key), `throttled` (HTTP 429 / rate-limit body, cooldown active), `error`
+(timeout, network failure, non-JSON/malformed body, non-2xx). The probe prints one line per provider
+plus accepted-of-returned counts.
+
+**Failover:** every provider result is captured independently (`Promise.all` with a per-provider
+try/catch). A provider being `throttled`, `unavailable`, `error`, or `empty` never affects another's
+candidates. Verified live: GDELT DOC `throttled` + NewsData `unavailable` + GKG/Wikipedia `ok` returns
+141 candidates with each provider's state reported (`tests/unit/news/newsroom.test.ts`,
+`provider-throttling.test.ts`).
+
+**Intake reasons:** `malformed-headline`, `non-english`, `betting-or-fantasy`, `template-page`,
+`video-page`, `generic-page`, `historical-stats-page`, `not-sports`, `low-quality-source`. Tests use
+verbatim headlines from the 2026-09-20 samples plus explicit "must keep" cases.
+
+## 17. Provider policy additions (review date 2026-09-20)
+
+| Provider id | Status | Notes |
+| --- | --- | --- |
+| `gdelt-gkg` | `approved` | Same dataset/terms as GDELT DOC (`gdeltproject.org/about.html`: unrestricted commercial use, citation + link required). Headline display allowed with attribution; no article bodies; no images. |
+| `wikipedia-events` | `approved` (discovery only) | CC BY-SA 4.0 text; attribution + share-alike for reuse, so `headlineDisplayAllowed: false` — internal discovery text only, publisher URL/name/day kept. Wikimedia API etiquette (descriptive User-Agent, sequential requests) enforced in the client. |
+| `wikinews` | `deferred` | License fine; not useful (sparse). |
+| `google-news-rss`, `bing-news-rss` | `rejected` | Unofficial feeds, no commercial-aggregation grant. |
+| `publisher-rss` | `rejected` | Fox Sports, CNN, team sites are non-commercial only; CBS ambiguous. |
+
+Existing policies (GDELT DOC, NewsData, GNews, NewsAPI, Currents, ESPN RSS) were not loosened.

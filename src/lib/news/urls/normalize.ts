@@ -19,6 +19,17 @@ const TRACKING_PARAMS = new Set([
   "gclid",
   "mc_cid",
   "mc_eid",
+  "ocid",
+  "ncid",
+  "cmpid",
+  "igshid",
+  "ref_src",
+  "mkt_tok",
+  "yclid",
+  "msclkid",
+  "dclid",
+  "_hsenc",
+  "_hsmi",
 ]);
 
 export interface NormalizedUrl {

@@ -1,3 +1,5 @@
+import { ProviderRateLimitedError, parseRetryAfter } from "../../errors";
+
 const GDELT_ENDPOINT = "https://api.gdeltproject.org/api/v2/doc/doc";
 
 export interface GdeltArticleRaw {
@@ -60,12 +62,24 @@ export async function fetchGdeltArticles({
     signal: AbortSignal.timeout(20_000),
   });
 
+  if (response.status === 429) {
+    throw new ProviderRateLimitedError(
+      `GDELT request failed: 429 Too Many Requests (rate limited)`,
+      parseRetryAfter(response.headers.get("retry-after")),
+    );
+  }
+
   if (!response.ok) {
     throw new Error(`GDELT request failed: ${response.status} ${response.statusText}`);
   }
 
   const contentType = response.headers.get("content-type") ?? "";
   const text = await response.text();
+
+  // GDELT sometimes signals throttling with a 200 and a plain-text "please limit requests" body.
+  if (/limit requests|too many requests/i.test(text.slice(0, 300)) && !text.trimStart().startsWith("{")) {
+    throw new ProviderRateLimitedError("GDELT asked us to limit requests (rate limited)");
+  }
 
   if (!contentType.includes("json")) {
     throw new Error(`GDELT returned a non-JSON response (content-type: ${contentType || "unknown"})`);

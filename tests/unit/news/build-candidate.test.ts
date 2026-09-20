@@ -73,3 +73,23 @@ describe("buildCandidate", () => {
     expect(candidate?.classification.confidence).toBe("high");
   });
 });
+
+describe("buildCandidate — source quality and unscoped feeds", () => {
+  it("records an operational source-quality bucket from the publisher domain", () => {
+    const known = buildCandidate({ provider: "gdelt", headline: "Lakers beat Celtics in overtime", sourceUrl: "https://www.espn.com/nba/story/1", queryProfileSport: "basketball" });
+    const unknown = buildCandidate({ provider: "gdelt", headline: "Lakers beat Celtics in overtime", sourceUrl: "https://ktop1490.com/a", queryProfileSport: "basketball" });
+    expect(known?.sourceQuality).toBe("known");
+    expect(unknown?.sourceQuality).toBe("unknown");
+  });
+
+  it("labels feed-style candidates with no query sport instead of inventing a query profile", () => {
+    const candidate = buildCandidate({
+      provider: "wikipedia-events",
+      headline: "Stefon Diggs fined $15,000 by the NFL",
+      sourceUrl: "https://example.com/a",
+      queryProfileLabel: "current-events",
+    });
+    expect(candidate?.queryProfile).toBe("current-events");
+    expect(candidate?.classification.sport).toBe("football");
+  });
+});

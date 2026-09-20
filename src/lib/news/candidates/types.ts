@@ -1,7 +1,15 @@
 import type { Sport } from "@/types/sport";
 
 /** Identifiers for candidate-discovery providers wired into the newsroom (not the same as content-attribution `NewsSource`). */
-export type NewsProviderId = "gdelt" | "newsdata" | "local";
+export type NewsProviderId = "gdelt" | "gdelt-gkg" | "newsdata" | "wikipedia-events" | "local";
+
+/**
+ * Operational quality bucket for the publisher domain — NOT an editorial or
+ * political credibility score. "known" = a publisher we recognize as a
+ * mainstream sports/news outlet or league site; "low-quality" = a domain that
+ * exists to sell betting/affiliate content; "unknown" = everything else.
+ */
+export type SourceQuality = "known" | "unknown" | "low-quality";
 
 export type ClassificationConfidence = "high" | "medium" | "low" | "none";
 
@@ -63,7 +71,10 @@ export interface NewsCandidate {
   /** Diagnostics only — see CandidateImageRef. Never used for public rendering. */
   imageRef?: CandidateImageRef;
 
-  /** The query profile id that discovered this candidate, e.g. "basketball". */
+  /** Operational source-quality bucket for `publisherDomain`, see SourceQuality. */
+  sourceQuality: SourceQuality;
+
+  /** The query profile id that discovered this candidate, e.g. "basketball" — or a feed label for providers with no per-sport query. */
   queryProfile: string;
 
   classification: ClassificationResult;

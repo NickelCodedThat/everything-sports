@@ -1,6 +1,6 @@
 import type { Sport } from "@/types/sport";
 import { QUERYABLE_SPORTS } from "../../queries/sport-profiles";
-import { describeFetchError } from "../../errors";
+import { ProviderRateLimitedError, describeFetchError } from "../../errors";
 import type { NewsCandidate } from "../../candidates/types";
 import type { CandidateProvider, CandidateProviderResult, FetchCandidatesOptions } from "../types";
 import { fetchNewsDataArticles } from "./client";
@@ -21,7 +21,7 @@ async function fetchForSport(
   apiKey: string,
   sport: Sport,
   limit: number,
-): Promise<{ candidates: NewsCandidate[]; error?: string }> {
+): Promise<{ candidates: NewsCandidate[]; error?: string; throttled?: boolean }> {
   const query = buildNewsDataQuery(sport);
   if (!query) return { candidates: [] };
 
@@ -32,6 +32,9 @@ async function fetchForSport(
       .filter((candidate): candidate is NewsCandidate => candidate !== null);
     return { candidates };
   } catch (error) {
+    if (error instanceof ProviderRateLimitedError) {
+      return { candidates: [], error: error.message, throttled: true };
+    }
     return { candidates: [], error: describeFetchError(error) };
   }
 }
@@ -59,16 +62,33 @@ export const newsDataProvider: CandidateProvider = {
     const sports = sport === "all" ? QUERYABLE_SPORTS : [sport];
     const candidates: NewsCandidate[] = [];
     const profileErrors: string[] = [];
+    let throttled = false;
 
-    for (const currentSport of sports) {
+    for (const [index, currentSport] of sports.entries()) {
       const result = await fetchForSport(apiKey, currentSport, limit);
       candidates.push(...result.candidates);
       if (result.error) {
         profileErrors.push(`${currentSport}: ${result.error}`);
       }
+      if (result.throttled) {
+        throttled = true;
+        const skipped = sports.slice(index + 1);
+        if (skipped.length > 0) profileErrors.push(`skipped after 429: ${skipped.join(", ")}`);
+        break;
+      }
     }
 
     const durationMs = Date.now() - startedAt;
+
+    if (throttled && candidates.length === 0) {
+      return {
+        providerId: "newsdata",
+        candidates: [],
+        status: "throttled",
+        message: profileErrors.join("; "),
+        durationMs,
+      };
+    }
 
     if (profileErrors.length > 0 && candidates.length === 0) {
       return {

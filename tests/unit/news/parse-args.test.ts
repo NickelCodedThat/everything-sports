@@ -51,3 +51,10 @@ describe("parseProbeArgs", () => {
     expect(() => parseProbeArgs(["--provider"])).toThrow(InvalidCliArgError);
   });
 });
+
+describe("parseProbeArgs — newly supported providers", () => {
+  it("accepts the keyless GKG and Wikipedia providers", () => {
+    expect(parseProbeArgs(["--provider=gdelt-gkg"]).provider).toBe("gdelt-gkg");
+    expect(parseProbeArgs(["--provider=wikipedia-events"]).provider).toBe("wikipedia-events");
+  });
+});

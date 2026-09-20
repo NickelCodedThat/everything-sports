@@ -1,3 +1,5 @@
+import { ProviderRateLimitedError, parseRetryAfter } from "../../errors";
+
 const NEWSDATA_ENDPOINT = "https://newsdata.io/api/1/news";
 
 export interface NewsDataArticleRaw {
@@ -52,6 +54,13 @@ export async function fetchNewsDataArticles({
     headers: { accept: "application/json" },
     signal: AbortSignal.timeout(20_000),
   });
+
+  if (response.status === 429) {
+    throw new ProviderRateLimitedError(
+      "NewsData request failed: 429 Too Many Requests (rate limited)",
+      parseRetryAfter(response.headers.get("retry-after")),
+    );
+  }
 
   const body = (await response.json().catch(() => null)) as NewsDataResponseBody | null;
 

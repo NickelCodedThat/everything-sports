@@ -5,7 +5,7 @@ function formatCandidateBlock(candidate: FetchNewsCandidatesResult["candidates"]
   const lines = [
     `PROVIDER      ${candidate.provider}`,
     `SPORT         ${candidate.classification.sport} (${candidate.classification.confidence})`,
-    `PUBLISHER     ${candidate.publisherName ?? candidate.publisherDomain}`,
+    `PUBLISHER     ${candidate.publisherName ?? candidate.publisherDomain} (${candidate.sourceQuality})`,
     `PUBLISHED     ${candidate.publishedAt ?? "unknown"}`,
     `HEADLINE      ${candidate.headline}`,
     `SOURCE URL    ${candidate.sourceUrl}`,
@@ -43,22 +43,45 @@ export function formatHumanReport(result: FetchNewsCandidatesResult, options: Pr
     }
   }
 
+  if (result.rejected.length > 0) {
+    sections.push("-- rejected by intake filter --");
+    for (const item of result.rejected) {
+      sections.push(`[${item.reasons.join(", ")}] ${item.candidate.headline} (${item.candidate.publisherDomain})`);
+    }
+    sections.push("");
+  }
+
   sections.push("-- newsroom health summary --");
-  for (const providerResult of result.providerResults) {
-    if (providerResult.status === "unavailable") {
-      sections.push(`${providerResult.providerId}: unavailable — ${providerResult.message ?? "not configured"}`);
-    } else if (providerResult.status === "error") {
-      sections.push(`${providerResult.providerId}: error — ${providerResult.message ?? "unknown error"}`);
-    } else {
-      sections.push(`${providerResult.providerId}: ${providerResult.candidates.length} candidates, 0 failures`);
+  for (const health of result.health) {
+    const counts = `${health.accepted} accepted of ${health.returned} returned`;
+    switch (health.state) {
+      case "ok":
+        sections.push(`${health.providerId}: OK — ${counts}${health.message ? ` (${health.message})` : ""}`);
+        break;
+      case "empty":
+        sections.push(`${health.providerId}: OK but empty — no candidates returned${health.message ? ` (${health.message})` : ""}`);
+        break;
+      case "unavailable":
+        sections.push(`${health.providerId}: UNAVAILABLE — ${health.message ?? "not configured"}`);
+        break;
+      case "throttled":
+        sections.push(`${health.providerId}: THROTTLED — ${health.message ?? "rate limited"}`);
+        break;
+      case "error":
+        sections.push(`${health.providerId}: ERROR — ${health.message ?? "unknown error"}`);
+        break;
     }
   }
   sections.push("");
-  sections.push(`TOTAL: ${result.summary.totalCandidates}`);
+  sections.push(`TOTAL ACCEPTED: ${result.summary.totalCandidates}`);
   for (const [sport, count] of Object.entries(result.summary.bySport).sort((a, b) => b[1] - a[1])) {
     sections.push(`${sport}: ${count}`);
   }
   sections.push(`Duplicates: ${result.summary.duplicates}`);
+  sections.push(`Rejected: ${result.summary.rejected}`);
+  for (const [reason, count] of Object.entries(result.summary.rejectedByReason).sort((a, b) => b[1] - a[1])) {
+    sections.push(`  ${reason}: ${count}`);
+  }
 
   return sections.join("\n");
 }

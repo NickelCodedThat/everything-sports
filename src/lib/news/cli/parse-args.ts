@@ -1,7 +1,7 @@
 import type { Sport } from "@/types/sport";
 import { QUERYABLE_SPORTS } from "../queries/sport-profiles";
 
-export type ProbeProviderArg = "gdelt" | "newsdata" | "local" | "all";
+export type ProbeProviderArg = "gdelt" | "gdelt-gkg" | "newsdata" | "wikipedia-events" | "local" | "all";
 
 export interface ProbeCliOptions {
   provider: ProbeProviderArg;
@@ -13,7 +13,7 @@ export interface ProbeCliOptions {
 
 export class InvalidCliArgError extends Error {}
 
-const VALID_PROVIDERS: ProbeProviderArg[] = ["gdelt", "newsdata", "local", "all"];
+const VALID_PROVIDERS: ProbeProviderArg[] = ["gdelt", "gdelt-gkg", "newsdata", "wikipedia-events", "local", "all"];
 
 const DEFAULT_OPTIONS: ProbeCliOptions = {
   provider: "all",

@@ -10,7 +10,9 @@ export {
   APPROVED_CANDIDATE_PROVIDERS,
   getCandidateProviderById,
   gdeltProvider,
+  gdeltGkgProvider,
   newsDataProvider,
+  wikipediaEventsProvider,
   localCandidateProvider,
 } from "./providers";
 export type { CandidateProvider, CandidateProviderResult, FetchCandidatesOptions } from "./providers/types";

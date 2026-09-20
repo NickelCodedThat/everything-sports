@@ -14,8 +14,8 @@ export interface FetchCandidatesOptions {
 export interface CandidateProviderResult {
   providerId: NewsProviderId;
   candidates: NewsCandidate[];
-  status: "ok" | "unavailable" | "error";
-  /** Human-readable context for "unavailable"/"error" (e.g. "missing NEWSDATA_API_KEY"), or partial-failure notes on "ok". */
+  status: "ok" | "unavailable" | "throttled" | "error";
+  /** Human-readable context for "unavailable"/"error" (e.g. "missing NEWSDATA_API_KEY", "HTTP 429 … cooldown"), or partial-failure notes on "ok". */
   message?: string;
   durationMs: number;
 }
