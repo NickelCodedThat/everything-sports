@@ -18,8 +18,8 @@ export interface ClassificationInput {
 
 /**
  * Phrases that contain a sport term but mean something else. Removed from the
- * text before matching. Grown from real data: "Special Olympics Kentucky Truck
- * Pull" (GDELT GKG, 2026-09-20) was classified as Olympics/high.
+ * text before matching. Grown from real data: a local charity-event story about
+ * Special Olympics (GDELT GKG, 2026-09-20) was classified as Olympics/high.
  */
 const NEUTRALIZED_PHRASES = ["Special Olympics", "Junior Olympics", "Olympic Park"];
 

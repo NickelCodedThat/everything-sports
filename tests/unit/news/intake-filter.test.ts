@@ -11,42 +11,42 @@ function make(headline: string, url = "https://www.example-news.com/sports/2026/
 /** Every rejected headline below is verbatim from a real 2026-09-20 sample. */
 describe("intake filter — rejects", () => {
   it.each([
-    "Storm vs Valkyries Prediction, Pick, WNBA Odds for Saturday, September 19",
-    "Top WNBA DFS Picks & Strategies for September 20: Lineup Tips",
-    "NFL Touchdown Parlay Week 2: Justin Jefferson, Deebo Samuel, Trey McBride",
-    "Last minute best bets for NFL Week 2: Patriots bounce back vs. Steelers",
-    "2026 MLB Rookie Of The Year Odds: McGonigle, Stewart Favored",
-    "2026 Fantasy Football Injury Tracker",
-    "FanDuel Promo Code: Claim $350 Bonus Bets for UFC 331 Van vs. Pantoja on Saturday",
+    "Herons vs Owls Prediction, Pick, League Odds for Saturday",
+    "Top DFS Picks & Strategies for Sunday: Lineup Tips",
+    "Touchdown Parlay Week 2: three fictional receivers to back",
+    "Last minute best bets for Week 2: road favorites to cover",
+    "Rookie of the Year odds: two newcomers favored",
+    "Fantasy Football Injury Tracker for Week 2",
+    "Sportsbook Promo Code: Claim Bonus Bets for Saturday's title fight",
   ])("betting/fantasy: %s", (headline) => {
     expect(getIntakeRejections(make(headline))).toContain("betting-or-fantasy");
   });
 
   it.each([
-    "Toronto Blue Jays at Texas Rangers Preview - 09/20/2026",
-    "Athletics at Cleveland Guardians Game Story, Scores/Highlights - 09/19/2026",
-    "Charlotte Hornets vs LA Clippers Nov 15, 2026 Game Summary",
-    "Watch ESPN - Stream Live Sports & ESPN Originals",
-    "Indiana Fever vs. Washington Mystics - September 20, 2026",
+    "Harbor City Herons at Lakeview Owls Preview - 09/20/2026",
+    "Harbor City Herons at Lakeview Owls Game Story, Scores/Highlights - 09/19/2026",
+    "Harbor City Herons vs Lakeview Owls Nov 15, 2026 Game Summary",
+    "Watch Example Sports Network - Stream Live Sports & Originals",
+    "Harbor City Herons vs. Lakeview Owls - September 20, 2026",
   ])("template page: %s", (headline) => {
     expect(getIntakeRejections(make(headline))).toContain("template-page");
   });
 
   it.each([
-    "Condensed Game: PHI@NYM - 9/19/26",
-    "Field View: Jose Siri's two-run home run",
-    "HLs: Bueckers in playoff form in Wings win",
-    "Highlights From Jordin Canada 10-Assist Game",
+    "Condensed Game: HCH@LVO - 9/19/26",
+    "Field View: Nolan Placeholder's two-run home run",
+    "HLs: Rookie guard in playoff form in Sparks win",
+    "Highlights From a Ten-Assist Game",
   ])("video clip title: %s", (headline) => {
     expect(getIntakeRejections(make(headline))).toContain("video-page");
   });
 
   it("video URL path", () => {
-    expect(getIntakeRejections(make("Noah Miller's two-run home run", "https://www.mlb.com/video/noah-miller-two-run-homer"))).toContain("video-page");
+    expect(getIntakeRejections(make("A rookie's two-run home run", "https://www.mlb.com/video/noah-miller-two-run-homer"))).toContain("video-page");
   });
 
   it("Spanish-language clips even when the provider claims English", () => {
-    expect(getIntakeRejections(make("Resumen Cachorros @ Rojos, Resultados/Jugadas destacadas - 19/09/2026"))).toContain("non-english");
+    expect(getIntakeRejections(make("Resumen Herons @ Owls, Resultados/Jugadas destacadas - 19/09/2026"))).toContain("non-english");
   });
 
   it("explicit non-English language", () => {
@@ -54,7 +54,7 @@ describe("intake filter — rejects", () => {
   });
 
   it("historical stats pages", () => {
-    expect(getIntakeRejections(make("Stan Hindman 1966 Situational Stats"))).toContain("historical-stats-page");
+    expect(getIntakeRejections(make("Sam Placeholder 1966 Situational Stats"))).toContain("historical-stats-page");
   });
 
   it("malformed headlines", () => {
@@ -81,11 +81,11 @@ describe("intake filter — rejects", () => {
 
 describe("intake filter — keeps legitimate headlines", () => {
   it.each([
-    "Warriors trade pitch reunites Stephen Curry with $90 million NBA star",
-    "NFL announces punishment for 20 players before Week 2",
+    "Trade pitch reunites a veteran guard with a former Warriors teammate",
+    "League announces discipline for a dozen players before Week 2",
     "Draft picks and trade rumors swirl around the Celtics",
     "Rays beat the odds to clinch the AL East",
-    "Angel Reese becomes first WNBA player to reach 500 rebounds in a season",
+    "Rookie forward becomes first WNBA player to reach a rebounding milestone in a season",
     "Way-too-early NBA predictions for the 2027 season",
     "Preview of the Cubs' September pitching plans",
   ])("%s", (headline) => {

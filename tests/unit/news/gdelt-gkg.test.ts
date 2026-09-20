@@ -15,12 +15,12 @@ const LAST_UPDATE =
   "1 ghi http://data.gdeltproject.org/gdeltv2/20260920044500.gkg.csv.zip\n";
 
 const ROWS = [
-  gkgRow({ date: "20260920044500", domain: "ktbb.com", url: "https://ktbb.com/acuna-slam?utm_source=x", title: "Acuña grand slam leads Braves to 6-3 win, dropping Astros from AL West lead &#8211; KTBB News, Weather, Ta" }),
-  gkgRow({ date: "20260920044500", domain: "wpsd.com", url: "https://wpsd.com/truck-pull", title: "Special Olympics Kentucky Truck Pull raises more than $35,000" }),
-  gkgRow({ date: "20260920044500", domain: "punchng.com", url: "https://punchng.com/probe", title: "NBA demands probe into deaths of 37 illegal miners in Niger" }),
+  gkgRow({ date: "20260920044500", domain: "example-radio.com", url: "https://example-radio.com/braves-slam?utm_source=x", title: "Fictional slugger's grand slam powers Braves past Astros &#8211; Example Radio News, Weather, Sp" }),
+  gkgRow({ date: "20260920044500", domain: "example-tv.com", url: "https://example-tv.com/truck-pull", title: "Special Olympics regional truck pull raises money for local athletes" }),
+  gkgRow({ date: "20260920044500", domain: "example-daily.ng", url: "https://example-daily.ng/probe", title: "NBA president in Niger calls for inquiry into a mine collapse" }),
   gkgRow({ date: "20260920044500", domain: "elpais.com", url: "https://elpais.com/x", title: "Real Madrid gana la Liga con un gol de Serie A", translated: true }),
   gkgRow({ date: "20260920044500", domain: "notitle.com", url: "https://notitle.com/a" }),
-  gkgRow({ date: "20260920044500", domain: "yahoo.com", url: "https://sports.yahoo.com/nfl-fines", title: "Stefon Diggs fined $15,000 by the NFL | Yahoo Sports" }),
+  gkgRow({ date: "20260920044500", domain: "yahoo.com", url: "https://sports.yahoo.com/nfl-fines", title: "Veteran receiver fined by the NFL for a uniform violation | Yahoo Sports" }),
 ].join("\n");
 
 describe("GKG zip + row parsing", () => {
@@ -55,25 +55,25 @@ describe("GKG zip + row parsing", () => {
 
 describe("GKG normalization", () => {
   it("strips publisher-name suffixes but keeps genuine dashes in headlines", () => {
-    expect(stripSiteSuffix("Cubs top Reds | 107.5 The Game (WNKT-FM)")).toBe("Cubs top Reds");
-    expect(stripSiteSuffix("Acuña slam leads Braves – KTBB News, Weather, Ta")).toBe("Acuña slam leads Braves");
+    expect(stripSiteSuffix("Cubs edge Reds late | 99.9 The Example (WXMP-FM)")).toBe("Cubs edge Reds late");
+    expect(stripSiteSuffix("Slugger's slam leads Braves – Example Radio News, Weather, Sp")).toBe("Slugger's slam leads Braves");
     expect(stripSiteSuffix("Coach says team is ready - and he means it now")).toBe("Coach says team is ready - and he means it now");
   });
 
   it("keeps sports rows, drops translated / non-sports / false-positive rows", () => {
     const candidates = parseGkgRows(ROWS).map(normalizeGkgArticle).filter((c) => c !== null);
     const headlines = candidates.map((c) => c!.headline);
-    expect(headlines).toContain("Stefon Diggs fined $15,000 by the NFL");
+    expect(headlines).toContain("Veteran receiver fined by the NFL for a uniform violation");
     expect(headlines.some((h) => h.includes("Special Olympics"))).toBe(false);
     expect(headlines.some((h) => h.includes("Niger"))).toBe(false);
     expect(headlines.some((h) => h.includes("Real Madrid"))).toBe(false);
   });
 
   it("strips tracking params from the URL, records GDELT GKG as provider (not publisher), and parses the timestamp", () => {
-    const slam = parseGkgRows(ROWS).map(normalizeGkgArticle).find((c) => c?.headline.startsWith("Acuña"));
-    expect(slam?.sourceUrl).toBe("https://ktbb.com/acuna-slam");
+    const slam = parseGkgRows(ROWS).map(normalizeGkgArticle).find((c) => c?.headline.startsWith("Fictional slugger"));
+    expect(slam?.sourceUrl).toBe("https://example-radio.com/braves-slam");
     expect(slam?.provider).toBe("gdelt-gkg");
-    expect(slam?.publisherDomain).toBe("ktbb.com");
+    expect(slam?.publisherDomain).toBe("example-radio.com");
     expect(slam?.publishedAt).toBe("2026-09-20T04:45:00Z");
     expect(slam?.classification.sport).toBe("baseball");
   });
@@ -137,5 +137,26 @@ describe("GKG provider", () => {
     const result = await gdeltGkgProvider.fetchCandidates({ sport: "all", window: "30min", limit: 10 });
     expect(result.status).toBe("error");
     expect(result.message).toMatch(/unzipped/);
+  });
+});
+
+describe("GKG immutable units (warehouse hook)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("lists unit keys oldest-first with the provider prefix", async () => {
+    const { gdeltGkgUnits } = await import("@/lib/news/providers/gdelt-gkg/provider");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(LAST_UPDATE)));
+    const keys = await gdeltGkgUnits.list({ window: "45min" });
+    expect(keys).toEqual(["gdelt-gkg:20260920041500", "gdelt-gkg:20260920043000", "gdelt-gkg:20260920044500"]);
+  });
+
+  it("fetches one unit as normalized sports candidates, and reports a missing unit as null", async () => {
+    const { gdeltGkgUnits } = await import("@/lib/news/providers/gdelt-gkg/provider");
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url.includes("20260920044500") ? new Response(new Uint8Array(buildZip("g.csv", ROWS))) : new Response("", { status: 404 }))));
+    const found = await gdeltGkgUnits.fetch("gdelt-gkg:20260920044500");
+    expect(found?.map((c) => c.provider)).toEqual(expect.arrayContaining(["gdelt-gkg"]));
+    expect(found!.length).toBeGreaterThan(0);
+    expect(await gdeltGkgUnits.fetch("gdelt-gkg:20260920000000")).toBeNull();
+    await expect(gdeltGkgUnits.fetch("newsdata:123")).rejects.toThrow(/not a GKG unit key/);
   });
 });

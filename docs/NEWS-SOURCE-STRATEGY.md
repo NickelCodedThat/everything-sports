@@ -246,9 +246,8 @@ Numbers are from the 300-headline sample unless noted "GKG". "Before" = the Phas
 intake filter; "after" = this change.
 
 **Basketball** (NBA / WNBA / college basketball) — *good relevance, heavy betting noise.*
-Before: 82 high / 18 low. Filter rejected 18 of 100 (7 game-stub/schedule pages such as *"Charlotte
-Hornets vs LA Clippers Nov 15, 2026 Game Summary"* — future-dated schedule pages, plus 1 generic ESPN
-landing page — 8 template pages in all; 7 betting/DFS pages; 3 video-clip pages). After: 82 accepted → 74 high / 6 medium / 2
+Before: 82 high / 18 low. Filter rejected 18 of 100 (7 "team vs team <future date> Game Summary" schedule stubs plus 1 generic
+streaming landing page — 8 template pages in all; 7 betting/DFS pages; 3 video-clip pages). After: 82 accepted → 74 high / 6 medium / 2
 low. Zero soccer or other-sport contamination. Sources dominated by Yahoo Sports (30), si.com, NBA.com.
 GKG (6 h, offseason): only 9 basketball candidates — WNBA playoffs plus NBA business/draft items — all
 relevant, except the false positive in 15.5.
@@ -265,45 +264,47 @@ bare "football" (locked by a test). GKG: 42 accepted.
 
 **Baseball** (MLB) — *cleanest sources, worst classification signal.*
 Before: **26 high / 74 low** — MLB.com headlines are player/team-centric and rarely say "MLB". Filter
-rejected 24 of 100 (10 MLB.com *"… Preview - 09/20/2026"* pages and 1 game-story template page, 9
-video clips — 7 *"Condensed Game"*, 2 *"Field View"* — 3 Spanish-language *"Resumen …"* clips, 1 odds page). After: 76 accepted → 25 high / 26 medium / 25 low. The remaining "low"
-are player-only headlines (*"Joe Ryan strikes out five"*, *"Pedro Pagés RBI single"*) — MLB.com video
+rejected 24 of 100 (10 league-site "<team> at <team> Preview - <date>" pages and 1 game-story template page, 9
+video clips — 7 "Condensed Game" and 2 "Field View" titles — 3 Spanish-language "Resumen …" clips, 1 odds page). After: 76 accepted → 25 high / 26 medium / 25 low. The remaining "low"
+are player-only headlines of the "<pitcher> strikes out five" / "<batter> RBI single" kind — MLB.com video
 titles — which no deterministic headline lexicon can fix without roster data. GKG: 50 accepted (cap),
 but only 21 distinct headlines (15.6).
 
-### 15.5 Concrete junk and false-positive examples (all real)
+### 15.5 Concrete junk and false-positive patterns (all observed in real data)
 
-| Class | Example | Handling |
+Phase 4 removed the verbatim third-party headlines from this table and from the regression tests; each
+pattern is now described, and reproduced in tests with synthetic headlines.
+
+| Class | Observed pattern | Handling |
 | --- | --- | --- |
-| Betting / props / DFS | *"Storm vs Valkyries Prediction, Pick, WNBA Odds for Saturday"*; *"NFL Touchdown Parlay Week 2: …"*; *"FanDuel Promo Code: Claim $350 Bonus Bets …"* | `betting-or-fantasy` |
-| Fantasy | *"2026 Fantasy Football Injury Tracker"* | `betting-or-fantasy` |
-| Schedule/preview stubs | *"Toronto Blue Jays at Texas Rangers Preview - 09/20/2026"*; *"San Francisco 49ers vs. Miami Dolphins - September 20, 2026"* | `template-page` |
-| Future-dated pages | *"Washington Wizards vs Denver Nuggets Jan 21, 2027 Game Summary"* (published 2026-09-19) | `template-page` |
-| Generic landing page | *"Watch ESPN - Stream Live Sports & ESPN Originals"* | `template-page` |
-| Video clips | *"Condensed Game: PHI@NYM - 9/19/26"*, *"HLs: Bueckers in playoff form …"* | `video-page` |
-| Non-English | *"Resumen Cachorros @ Rojos, Resultados/Jugadas destacadas"* (Spanish, from an "English" query) | `non-english` |
-| Historical stats page | *"Stan Hindman 1966 Situational Stats"* | `historical-stats-page` |
-| Betting-affiliate domain | covers.com, prizepicks.com, DraftKings, FanDuel | `low-quality-source` |
-| Acronym collision | GKG: *"NBA demands probe into deaths of 37 illegal miners in Niger"* — Nigerian Bar Association, classified basketball/**high** | fixed: `AMBIGUOUS_TERM_GUARDS` |
-| Phrase collision | GKG: *"Special Olympics Kentucky Truck Pull …"* classified olympics/high | fixed: neutralized phrase |
-| Site-name suffix | GKG titles: *"… \| 107.5 The Game (WNKT-FM)"*, *"… – KTBB News, Weather, Ta…"* | fixed: `stripSiteSuffix` |
-| Common-word nicknames | *"Congress debates new bills"* would hit the Bills | fixed: nicknames match case-sensitively; 2 hits needed without a query origin |
-| **Still wrong** | GKG: *"Caitlin Clark shows off new Nike signature shoe … inspired by favorite NFL team"* — WNBA story classified football/high because it mentions the NFL | Known weakness (15.8) |
+| Betting / props / DFS | "<team> vs <team> Prediction, Pick, League Odds"; "Week N touchdown parlay"; sportsbook promo-code pages | `betting-or-fantasy` |
+| Fantasy | "Fantasy football injury tracker" | `betting-or-fantasy` |
+| Schedule/preview stubs | "<team> at <team> Preview - MM/DD/YYYY"; "<team> vs. <team> - Month D, YYYY" | `template-page` |
+| Future-dated pages | "<team> vs <team> <date in 2027> Game Summary", crawled in 2026 | `template-page` |
+| Generic landing page | "Watch <network> - Stream Live Sports & …" | `template-page` |
+| Video clips | "Condensed Game: AAA@BBB - date"; "HLs: …"; "Highlights From …" | `video-page` |
+| Non-English | Spanish "Resumen … Resultados/Jugadas destacadas" clip pages returned by an "English" query | `non-english` |
+| Historical stats page | "<person> <year before 2000> Situational Stats" | `historical-stats-page` |
+| Betting-affiliate domain | sportsbook / odds-comparison / DFS operator domains | `low-quality-source` |
+| Acronym collision | A Nigerian news story about the Nigerian Bar Association ("NBA"), classified basketball/**high** | fixed: `AMBIGUOUS_TERM_GUARDS` |
+| Phrase collision | A local charity story about Special Olympics classified olympics/high | fixed: neutralized phrase |
+| Site-name suffix | GKG titles ending in " \| <radio station>" or " – <outlet> News, Weather, …" | fixed: `stripSiteSuffix` |
+| Common-word nicknames | A story about "new bills" would hit the Buffalo Bills | fixed: nicknames match case-sensitively; 2 hits needed without a query origin |
+| **Still wrong** | A WNBA story that mentions an NFL team in passing, classified football/high | Known weakness (15.8) |
 
 ### 15.6 Same-event duplicates (input for Phase 4/5 clustering)
 
 Exact-URL duplicates were **zero** in every run; same-*event* duplication is massive:
 
-- **Wire syndication (GKG):** the identical headline appears on many local sites — *"Ravens rule out star
-  WR Zay Flowers (hamstring) vs. Saints"* on 13 domains; *"Ronald Acuna Jr.'s late grand slam leads
-  Braves past Astros"* on 8; *"Cubs come through in late innings, top Reds"* on 7. Across the 6 h GKG
+- **Wire syndication (GKG):** the identical headline appears on many local sites — one NFL injury-report
+  headline on 13 domains, a walk-off home-run recap on 8, a late-inning MLB recap on 7. Across the 6 h GKG
   run, **137 accepted candidates were only 89 distinct headlines**. An exact normalized-headline group
-  is therefore a cheap, high-yield first clustering step.
-- **Multi-publisher, different wording (sample):** Angel Reese's 500-rebound record — Bleacher Report,
-  Yahoo Sports (×3 headlines), USA Today, SLAM: *"Angel Reese Becomes First WNBA Player to Reach 500
-  Rebounds…"* vs *"Angel Reese makes WNBA history (again!) with 500 rebounds in a season"*. The NFL
-  videoboard rule change — ESPN, Bleacher Report, Yahoo, Boston.com. Weekly injury reports — NBC Sports vs
-  CBS Sports. Wikipedia Current Events yields this shape by design: one event, several cited publishers.
+  is therefore a cheap, high-yield first clustering step — Phase 4 implements exactly that
+  (`docs/NEWS-WAREHOUSE.md`).
+- **Multi-publisher, different wording (sample):** one WNBA rebounding record was covered by five or more
+  publishers under several different headlines; an NFL rule change and a weekly injury report likewise
+  appeared from different outlets with different wording. Those need fuzzy same-event clustering (Phase 5+),
+  not exact matching. Wikipedia Current Events yields this shape by design: one event, several cited publishers.
 - Also observed: the same article via different tracking parameters (`ocid`, `cmpid`, …) — now stripped
   before fingerprinting.
 
@@ -324,7 +325,7 @@ inspectable (signals list every hit and tier):
   hints; `low` = query origin only or one weak hint. New **contradictory signal** lines (rival sport
   present; soccer/hockey vocabulary) downgrade `high` to `medium`.
 - Whole-word matching (fixes "NBA" inside "WNBA"), case-sensitive nicknames, ambiguous-acronym guards
-  (NBA/SEC/ACC/FBS), neutralized phrases ("Special Olympics").
+  (NBA/SEC/ACC/FBS), neutralized phrases (a Special Olympics collision).
 - **Query-origin-less classification** for feed-style providers (Wikipedia, GKG): needs a league term or
   two distinct team/vocabulary hits; otherwise `unknown`/`none`.
 
@@ -334,12 +335,12 @@ not reject "draft picks", "way-too-early predictions", or "beat the odds".
 
 **Source quality** (`sources/quality.ts`) — `known` / `unknown` / `low-quality`, ~35 known publisher/league
 domains, ~13 betting-affiliate domains. Operational only, no editorial or political meaning. It earned its
-place: it caught 4 of the 16 football rejections in the sample and all 3 sportsbook promo-code pages
-(Bet365, COVERS, FanDuel) in the GKG run — one of them ("Bet365 Bonus Code…") matched no headline rule.
+place: it caught 4 of the 16 football rejections in the sample and all 3 sportsbook promo-code pages in the
+GKG run — one of them matched no headline rule at all.
 
 ### 15.8 Known weaknesses
 
-- **Incidental league mentions** (the Caitlin Clark/NFL example) — headline-only classification can't tell
+- **Incidental league mentions** (a WNBA story mentioning an NFL team) — headline-only classification can't tell
   the subject from an aside. Needs clustering + a second opinion (e.g. the article's own section/keywords).
 - **Player-only headlines** (MLB.com video titles) stay `low`; fixing that needs roster data or an LLM
   pass, both out of scope.
@@ -395,3 +396,13 @@ verbatim headlines from the 2026-09-20 samples plus explicit "must keep" cases.
 | `publisher-rss` | `rejected` | Fox Sports, CNN, team sites are non-commercial only; CBS ambiguous. |
 
 Existing policies (GDELT DOC, NewsData, GNews, NewsAPI, Currents, ESPN RSS) were not loosened.
+
+## 18. Phase 4 — the warehouse
+
+Discovered candidates are now persisted in Supabase Postgres (`src/lib/news/warehouse`,
+`supabase/migrations`). Nothing about provider policy moved: `src/lib/news/policy/registry.ts` stays
+canonical, and the warehouse refuses to ingest from any provider whose policy status is not `approved`.
+The 2026-09-20 findings above (exact-URL duplicates = 0, 137 → 89 distinct headlines) are what the
+warehouse's dedupe model is built on. Design, schema, and the live persistence validation are in
+[`docs/NEWS-WAREHOUSE.md`](NEWS-WAREHOUSE.md). The Google News RSS engineering sample described in 15.3 remains a
+one-off: it is `rejected`, is not a provider, and none of its headlines are stored or committed.

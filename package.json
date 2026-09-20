@@ -12,12 +12,22 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
-    "news:probe": "tsx scripts/news-probe.ts"
+    "news:probe": "tsx scripts/news-probe.ts",
+    "news:ingest": "tsx --conditions=react-server scripts/news-ingest.ts",
+    "news:warehouse:stats": "tsx --conditions=react-server scripts/news-warehouse-stats.ts",
+    "db:start": "supabase start -x imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,studio,realtime,storage-api,postgres-meta",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:status": "supabase status",
+    "db:types": "supabase gen types typescript --local > src/lib/news/warehouse/database.types.ts",
+    "test:db": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "next": "16.3.5",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -25,13 +35,16 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.4",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "jsdom": "^30.0.1",
+    "pg": "^8.23.0",
     "prettier": "^3.9.6",
+    "supabase": "^2.117.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",

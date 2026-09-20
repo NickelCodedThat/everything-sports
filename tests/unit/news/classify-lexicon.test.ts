@@ -5,7 +5,7 @@ import { classifyCandidate } from "@/lib/news/classification/classify";
 describe("classifyCandidate — lexicon tuning from real data", () => {
   it("lifts MLB headlines that name teams and play-by-play language but never say 'MLB'", () => {
     const result = classifyCandidate({
-      headline: "Acuña grand slam leads Braves to 6-3 win, dropping Astros from AL West lead",
+      headline: "Fictional slugger's grand slam powers Braves past Astros in an AL West showdown",
       queryProfileSport: "baseball",
     });
     expect(result.sport).toBe("baseball");
@@ -14,20 +14,20 @@ describe("classifyCandidate — lexicon tuning from real data", () => {
   });
 
   it("gives WNBA-style headlines that only carry two weak hints medium confidence", () => {
-    const result = classifyCandidate({ headline: "Dream 106-81 Sky (Sep 19, 2026) Game Recap", queryProfileSport: "basketball" });
+    const result = classifyCandidate({ headline: "Dream 100-80 Sky (Sep 1, 2026) Game Recap", queryProfileSport: "basketball" });
     expect(result.confidence).toBe("medium");
   });
 
   it("gives college-football matchups with two program names medium confidence", () => {
     const result = classifyCandidate({
-      headline: "No. 10 Alabama rallies to beat Florida State in offensive thriller",
+      headline: "No. 10 Alabama edges Florida State in a high-scoring opener",
       queryProfileSport: "football",
     });
     expect(result.confidence).toBe("medium");
   });
 
   it("leaves a lone weak hint or a bare query origin at low confidence", () => {
-    expect(classifyCandidate({ headline: "Chris Paul reveals how he kept his edge", queryProfileSport: "basketball" }).confidence).toBe("low");
+    expect(classifyCandidate({ headline: "A retired point man reveals how he kept his edge", queryProfileSport: "basketball" }).confidence).toBe("low");
     expect(classifyCandidate({ headline: "Giants fans line up early", queryProfileSport: "baseball" }).confidence).toBe("low");
   });
 
@@ -39,7 +39,7 @@ describe("classifyCandidate — lexicon tuning from real data", () => {
 
   it("does not read the Nigerian Bar Association's 'NBA' as basketball", () => {
     const result = classifyCandidate({
-      headline: "NBA demands probe into deaths of 37 illegal miners in Niger",
+      headline: "NBA president in Niger calls for inquiry into a mine collapse",
       queryProfileSport: "basketball",
     });
     expect(result.confidence).not.toBe("high");
@@ -47,7 +47,7 @@ describe("classifyCandidate — lexicon tuning from real data", () => {
   });
 
   it("does not read 'Special Olympics' as the Olympics", () => {
-    const result = classifyCandidate({ headline: "Special Olympics Kentucky Truck Pull raises more than $35,000" });
+    const result = classifyCandidate({ headline: "Special Olympics regional truck pull raises money for local athletes" });
     expect(result.sport).toBe("unknown");
   });
 
@@ -78,13 +78,13 @@ describe("classifyCandidate — lexicon tuning from real data", () => {
 
   describe("with no query origin (feed-style providers)", () => {
     it("classifies from league terms alone", () => {
-      const result = classifyCandidate({ headline: "Stefon Diggs fined $15,000 by the NFL" });
+      const result = classifyCandidate({ headline: "Veteran receiver fined by the NFL for a uniform violation" });
       expect(result.sport).toBe("football");
       expect(result.confidence).toBe("high");
     });
 
     it("needs two distinct team hits when no league term is present", () => {
-      expect(classifyCandidate({ headline: "Cubs come through in late innings, top Reds" }).sport).toBe("baseball");
+      expect(classifyCandidate({ headline: "Cubs edge Reds with a late-inning rally" }).sport).toBe("baseball");
       expect(classifyCandidate({ headline: "Yankees let lead slip away" }).sport).toBe("unknown");
     });
 
@@ -97,7 +97,7 @@ describe("classifyCandidate — lexicon tuning from real data", () => {
     });
 
     it("returns unknown/none rather than guessing", () => {
-      const result = classifyCandidate({ headline: "Japanese triathlete wins the first gold medal of the Asian Games" });
+      const result = classifyCandidate({ headline: "A triathlete wins the opening gold medal at a regional multi-sport games" });
       expect(result).toMatchObject({ sport: "unknown", confidence: "none" });
       expect(result.signals.length).toBeGreaterThan(0);
     });

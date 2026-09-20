@@ -3,17 +3,17 @@ import { parseSportsSection } from "@/lib/news/providers/wikipedia-events/parse"
 import { currentEventsPageTitle } from "@/lib/news/providers/wikipedia-events/client";
 import { wikipediaEventsProvider, windowToDays } from "@/lib/news/providers/wikipedia-events/provider";
 
-/** Trimmed from the real 2026-09-19 Current Events page. */
+/** Synthetic page in the same wikitext shape as a Portal:Current_events day (invented events and example.com links). */
 const WIKITEXT = `'''Politics'''
 *[[Some politics]]
-**Something else. [https://example.com/politics (Reuters)]
+**Something else. [https://example.com/politics (Example Wire)]
 
 '''Sports'''
-*[[2026 Asian Games]]
-**The 20th [[Asian Games]] are opened by [[Emperor of Japan|Emperor]] [[Naruhito]] in [[Nagoya]]. [https://www.reuters.com/sports/asian-games-open-nagoya-2026-09-19/ (Reuters)]
+*[[2026 Regional Games]]
+**The 5th [[Regional Games]] are opened by a [[Head of state|head of state]] in [[Springfield]]. [https://www.example-wire.com/sports/regional-games-open (Example Wire)]
 *[[2026 WNBA season]]
-**In [[women's basketball]], [[Atlanta Dream]] player [[Angel Reese]] becomes the first player in [[Women's National Basketball Association]] history to reach 500 [[Rebound (basketball)|rebounds]] in a single season. [https://bleacherreport.com/articles/25500900-angel-reese (Bleacher Report)] [https://www.espn.com/wnba/story/_/id/1/reese (''ESPN'')]
-*The [[Women's Tennis Association]] announces its finals will move to [[Charlotte]]. [https://www.bbc.com/sport/tennis/articles/cmly495rnkq7o (BBC)]
+**In [[women's basketball]], [[Atlanta Dream]] forward Jane Placeholder becomes the first player in [[Women's National Basketball Association]] history to reach a fictional [[Rebound (basketball)|rebounds]] milestone. [https://example-sports.com/articles/placeholder-milestone (Example Sports)] [https://www.example-network.com/wnba/story/1 (''Example Network'')]
+*The [[Women's Tennis Association]] announces its finals will move to [[Charlotte]]. [https://www.example-news.co.uk/sport/tennis/articles/abc123 (Example News)]
 *A bullet with no citation at all.
 <!-- All news items above this line -->
 
@@ -28,16 +28,16 @@ describe("parseSportsSection", () => {
   });
 
   it("strips wiki markup and citation links from the text", () => {
-    expect(items[0].text).toBe("The 20th Asian Games are opened by Emperor Naruhito in Nagoya.");
-    expect(items[1].text).toContain("500 rebounds in a single season.");
+    expect(items[0].text).toBe("The 5th Regional Games are opened by a head of state in Springfield.");
+    expect(items[1].text).toContain("milestone.");
     expect(items[1].text).not.toMatch(/\[|\]|https?:/);
   });
 
   it("keeps the parent event as context and every cited link with its publisher label", () => {
     expect(items[1].parent).toBe("2026 WNBA season");
     expect(items[1].links).toEqual([
-      { url: "https://bleacherreport.com/articles/25500900-angel-reese", label: "Bleacher Report" },
-      { url: "https://www.espn.com/wnba/story/_/id/1/reese", label: "ESPN" },
+      { url: "https://example-sports.com/articles/placeholder-milestone", label: "Example Sports" },
+      { url: "https://www.example-network.com/wnba/story/1", label: "Example Network" },
     ]);
     expect(items[2].parent).toBeUndefined();
   });
@@ -72,11 +72,11 @@ describe("Wikipedia Current Events provider", () => {
 
     expect(result.status).toBe("ok");
     expect(result.candidates).toHaveLength(4); // 1 + 2 + 1 links
-    const reese = result.candidates.filter((c) => c.headline.includes("Angel Reese"));
-    expect(reese.map((c) => c.publisherName).sort()).toEqual(["Bleacher Report", "ESPN"]);
-    expect(reese.every((c) => c.classification.sport === "basketball")).toBe(true);
-    expect(reese.every((c) => c.publisherDomain !== "wikipedia.org")).toBe(true);
-    expect(reese[0].provider).toBe("wikipedia-events");
+    const milestone = result.candidates.filter((c) => c.headline.includes("Jane Placeholder"));
+    expect(milestone.map((c) => c.publisherName).sort()).toEqual(["Example Network", "Example Sports"]);
+    expect(milestone.every((c) => c.classification.sport === "basketball")).toBe(true);
+    expect(milestone.every((c) => c.publisherDomain !== "wikipedia.org")).toBe(true);
+    expect(milestone[0].provider).toBe("wikipedia-events");
 
     // Wikimedia etiquette: descriptive User-Agent, sequential requests.
     const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;

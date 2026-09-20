@@ -1,15 +1,19 @@
 import type { NewsCandidate } from "../candidates/types";
 
-export type IntakeRejectReason =
-  | "malformed-headline"
-  | "non-english"
-  | "betting-or-fantasy"
-  | "template-page"
-  | "video-page"
-  | "generic-page"
-  | "historical-stats-page"
-  | "not-sports"
-  | "low-quality-source";
+/** Every reason the intake filter can give. The warehouse's candidate_rejections check constraint must list all of these (tested). */
+export const INTAKE_REJECT_REASONS = [
+  "malformed-headline",
+  "non-english",
+  "betting-or-fantasy",
+  "template-page",
+  "video-page",
+  "generic-page",
+  "historical-stats-page",
+  "not-sports",
+  "low-quality-source",
+] as const;
+
+export type IntakeRejectReason = (typeof INTAKE_REJECT_REASONS)[number];
 
 export interface RejectedCandidate {
   candidate: NewsCandidate;
@@ -46,13 +50,13 @@ const ODDS_IDIOM = /\b(against (all |the )?odds|beat(ing|s)? the odds|defy(ing)?
 const BARE_ODDS = /\bodds\b/i;
 
 const TEMPLATE_PAGE_PATTERNS: RegExp[] = [
-  // "Toronto Blue Jays at Texas Rangers Preview - 09/20/2026", "... Game Story, Scores/Highlights - 09/19/2026"
+  // "<Team> at <Team> Preview - MM/DD/YYYY" and "... Game Story, Scores/Highlights - MM/DD/YYYY" (league-site stub pages)
   /\b(Game Summary|Game Story,? Scores\/Highlights|Game Preview|Preview)\s*[-–:]?\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/i,
-  // Schedule pages: "Charlotte Hornets vs LA Clippers Nov 15, 2026 Game Summary"
+  // Schedule pages: "<Team> vs <Team> Mon D, YYYY Game Summary" (often dated in the future)
   /\b[A-Z][a-z]{2} \d{1,2}, \d{4} Game Summary\s*$/,
-  // Game listing stubs: "Indiana Fever vs. Washington Mystics - September 20, 2026"
+  // Game listing stubs: "<Team> vs. <Team> - Month D, YYYY"
   /\bvs\.? .+ [-–] [A-Z][a-z]+ \d{1,2}, \d{4}\s*$/,
-  // Generic landing pages: "Watch ESPN - Stream Live Sports & ESPN Originals"
+  // Generic streaming landing pages: "Watch <Network> - Stream Live Sports & …"
   /\bStream Live Sports\b/i,
 ];
 

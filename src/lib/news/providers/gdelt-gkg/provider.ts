@@ -2,7 +2,7 @@ import type { Sport } from "@/types/sport";
 import { ProviderRateLimitedError, describeFetchError } from "../../errors";
 import { buildCandidate } from "../../normalization/build-candidate";
 import type { NewsCandidate } from "../../candidates/types";
-import type { CandidateProvider, CandidateProviderResult, FetchCandidatesOptions } from "../types";
+import type { CandidateProvider, CandidateProviderResult, FetchCandidatesOptions, ProviderUnits } from "../types";
 import { fetchGkgFile, fetchLatestGkgStamp, recentGkgStamps, type GkgArticleRaw } from "./client";
 
 /** Each 15-minute file is ~2 MB compressed; cap how many one probe pulls. */
@@ -36,7 +36,7 @@ const PUBLISHER_SUFFIX_WORDS =
 
 /**
  * GKG page titles are the HTML <title>, which sites suffix with their own
- * name ("… | 107.5 The Game (WNKT-FM)", "… – KTBB News, Weather, Ta…"). Strips
+ * name ("… | 99.9 The Example (WXMP-FM)", "… – Example Radio News, Weather, Sp…"). Strips
  * a trailing site-name segment: always after " | ", and after " – "/" - " only
  * when the tail is short and looks like a publisher name, so genuine dashes in
  * headlines survive.
@@ -75,11 +75,33 @@ export function normalizeGkgArticle(raw: GkgArticleRaw): NewsCandidate | null {
   return candidate;
 }
 
+const UNIT_PREFIX = "gdelt-gkg:";
+
+export function gkgUnitKey(stamp: string): string {
+  return `${UNIT_PREFIX}${stamp}`;
+}
+
+/** Each 15-minute GKG file is immutable, so it is a natural exactly-once unit for the warehouse. */
+export const gdeltGkgUnits: ProviderUnits = {
+  async list({ window }) {
+    const stamps = recentGkgStamps(await fetchLatestGkgStamp(), windowToFileCount(window));
+    return stamps.reverse().map(gkgUnitKey);
+  },
+
+  async fetch(unitKey) {
+    if (!unitKey.startsWith(UNIT_PREFIX)) throw new Error(`not a GKG unit key: ${unitKey}`);
+    const rows = await fetchGkgFile(unitKey.slice(UNIT_PREFIX.length));
+    if (rows === null) return null;
+    return rows.map(normalizeGkgArticle).filter((candidate): candidate is NewsCandidate => candidate !== null);
+  },
+};
+
 export const gdeltGkgProvider: CandidateProvider = {
   id: "gdelt-gkg",
   displayName: "GDELT GKG 15-minute files",
   requiresApiKey: false,
   expectedFreshness: "near-realtime",
+  units: gdeltGkgUnits,
 
   async fetchCandidates({ sport, window, limit }: FetchCandidatesOptions): Promise<CandidateProviderResult> {
     const startedAt = Date.now();

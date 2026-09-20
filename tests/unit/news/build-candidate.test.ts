@@ -85,7 +85,7 @@ describe("buildCandidate — source quality and unscoped feeds", () => {
   it("labels feed-style candidates with no query sport instead of inventing a query profile", () => {
     const candidate = buildCandidate({
       provider: "wikipedia-events",
-      headline: "Stefon Diggs fined $15,000 by the NFL",
+      headline: "Veteran receiver fined by the NFL for a uniform violation",
       sourceUrl: "https://example.com/a",
       queryProfileLabel: "current-events",
     });

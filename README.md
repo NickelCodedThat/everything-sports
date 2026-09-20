@@ -7,7 +7,9 @@ earns it. Free to read, no accounts, no paywall.
 Phase 1 built the application foundation, brand/design system, editorial domain model, ranking
 engine, fixture data, and a fully composed homepage. Phase 3 adds a **newsroom intake layer** —
 real, live sports-news discovery from free sources — as a CLI/dev-only tool, entirely separate from
-the public homepage, which still reads only the Phase 1 fixture data. See
+the public homepage, which still reads only the Phase 1 fixture data. Phase 4 adds a **persistent
+news warehouse** (Supabase Postgres) that remembers what the newsroom discovers — still internal, still
+not connected to the homepage. See
 [Phase 1 scope](#phase-1-scope) and [Newsroom](#newsroom-phase-3-multi-source-candidate-discovery)
 below.
 
@@ -46,6 +48,7 @@ pnpm test        # vitest — domain/ranking/homepage-assembly/newsroom unit tes
 pnpm build       # next build — production build + static generation
 pnpm test:e2e    # playwright — responsive + accessibility smoke tests (builds and boots the app)
 pnpm news:probe  # live newsroom CLI — see "Newsroom" below; not part of the automated test suite
+pnpm test:db     # warehouse integration tests against the local Supabase stack (needs Docker + pnpm db:start)
 ```
 
 ## Project structure
@@ -73,6 +76,8 @@ src/
       policy/              the provider-policy registry
       queries/             provider-agnostic per-sport query term profiles
       urls/                URL normalization (tracking-param stripping, etc.)
+      filters/, sources/   conservative intake filter; operational source-quality buckets
+      warehouse/           Phase 4 — server-only Supabase persistence (docs/NEWS-WAREHOUSE.md)
       cli/                 pnpm news:probe's argument parsing + report formatting
       newsroom.ts           the multi-provider aggregator
     ranking/              editorial scoring + sorting, with its own unit tests
@@ -82,7 +87,10 @@ src/
                           StoryCluster, EditorialPriority
 scripts/
   news-probe.ts          the pnpm news:probe CLI entry point (runs via tsx, outside Next.js)
+  news-ingest.ts, news-warehouse-stats.ts   the Phase 4 warehouse CLIs
+supabase/                config.toml + version-controlled migrations for the warehouse schema
 tests/
+  integration/warehouse/ database integration tests (pnpm test:db; local Supabase only)
   unit/                  vitest specs — ranking, homepage assembly, story routing, and
                           tests/unit/news/ (newsroom: providers, classification, policy, CLI args —
                           all mocked, no network)
@@ -159,6 +167,22 @@ Inspect it with the CLI — `pnpm news:probe` (see the strategy doc for flags) �
 only, at `/dev/newsroom` (guarded to 404 outside development; not linked from navigation).
 `NewsCandidate → Story` (classification refinement, real deduplication, clustering, ranking
 integration, editorial review) is future-phase work.
+
+## News warehouse (Phase 4): persistent candidate history
+
+The newsroom's discovered candidates are now stored durably in Supabase Postgres — deduplicated by
+normalized URL, grouped by normalized headline, with every provider/run/file sighting kept as
+provenance. **Server-side only**; the public site does not read it. Full design, schema, dedupe rules
+and validation numbers: [`docs/NEWS-WAREHOUSE.md`](docs/NEWS-WAREHOUSE.md).
+
+```bash
+pnpm db:start                       # local Supabase (Docker); applies supabase/migrations
+pnpm db:status -o env               # copy API_URL / SECRET_KEY into .env.local (SUPABASE_URL / SUPABASE_SECRET_KEY)
+pnpm news:ingest                    # ingest live GDELT GKG (last 2h) — safe to run repeatedly
+pnpm news:warehouse:stats           # internal summary
+pnpm db:reset                       # rebuild the local schema from migrations
+pnpm test:db                        # integration tests against the local database
+```
 
 ## Brand implementation
 

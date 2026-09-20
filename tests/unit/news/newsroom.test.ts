@@ -164,7 +164,7 @@ describe("fetchNewsCandidates — failover, health and intake filtering", () => 
       providerWithStatus("gdelt", "ok", [
         candidate({ id: "a", fingerprint: "a" }),
         candidate({ id: "b", fingerprint: "b", headline: "NFL Prop Picks & Week 2 Best Bets" }),
-        candidate({ id: "c", fingerprint: "c", headline: "Condensed Game: PHI@NYM - 9/19/26" }),
+        candidate({ id: "c", fingerprint: "c", headline: "Condensed Game: HCH@LVO - 9/19/26" }),
       ]),
     ];
     const result = await fetchNewsCandidates({ providers, sport: "all", window: "3h", limit: 25 });

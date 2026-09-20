@@ -21,6 +21,20 @@ export interface CandidateProviderResult {
 }
 
 /**
+ * Optional capability for providers whose data arrives as immutable,
+ * individually addressable units (e.g. GDELT GKG's 15-minute files). The
+ * warehouse uses it to process each unit exactly once: it lists unit keys,
+ * skips the ones already stored, and fetches only the rest.
+ * Unit keys are `<providerId>:<stamp>` and are globally unique.
+ */
+export interface ProviderUnits {
+  /** Unit keys covering the given window, oldest first. */
+  list(options: Pick<FetchCandidatesOptions, "window">): Promise<string[]>;
+  /** Normalized candidates for one unit, or null when the unit does not exist (yet). */
+  fetch(unitKey: string): Promise<NewsCandidate[] | null>;
+}
+
+/**
  * Contract every candidate-discovery source must satisfy. This replaces the
  * Phase 1 `NewsProvider` (which produced finished `Story` objects directly —
  * skipping normalize/classify/dedupe/cluster/rank/editorial entirely, which
@@ -36,4 +50,6 @@ export interface CandidateProvider {
   requiresApiKey: boolean;
   expectedFreshness: Freshness;
   fetchCandidates(options: FetchCandidatesOptions): Promise<CandidateProviderResult>;
+  /** Present only on providers with immutable units — see ProviderUnits. */
+  units?: ProviderUnits;
 }

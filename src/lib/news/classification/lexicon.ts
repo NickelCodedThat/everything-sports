@@ -81,8 +81,8 @@ export const CONTRADICTION_LEXICON: Partial<Record<Sport, string[]>> = {
 /**
  * Ambiguous acronyms and the context that shows they are NOT the sport term.
  * When the guard matches anywhere in the text, that acronym is ignored.
- * Grown from real data: "NBA demands probe into deaths of 37 illegal miners
- * in Niger" (Nigerian Bar Association) matched basketball/high on 2026-09-20.
+ * Grown from real data: a Nigerian news story about the Nigerian Bar Association
+ * ("NBA") matched basketball/high on 2026-09-20.
  */
 export const AMBIGUOUS_TERM_GUARDS: Record<string, RegExp> = {
   NBA: /\b(Niger|Nigeria|Nigerian|Bar Association|lawyers?|National Building)\b/i,
