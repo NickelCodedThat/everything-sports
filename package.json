@@ -24,7 +24,10 @@
     "news:worker": "tsx --conditions=react-server scripts/news-worker.ts",
     "news:health": "tsx --conditions=react-server scripts/news-health.ts",
     "news:cluster": "tsx --conditions=react-server scripts/news-cluster.ts",
-    "news:clusters": "tsx --conditions=react-server scripts/news-clusters.ts"
+    "news:clusters": "tsx --conditions=react-server scripts/news-clusters.ts",
+    "news:rank": "tsx --conditions=react-server scripts/news-rank.ts",
+    "news:slate": "tsx --conditions=react-server scripts/news-slate.ts",
+    "news:editorial": "tsx --conditions=react-server scripts/news-editorial.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

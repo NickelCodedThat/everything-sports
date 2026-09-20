@@ -4,7 +4,7 @@ import { handleTickRequest } from "@/lib/news/engine/http";
 import type { TickResult } from "@/lib/news/engine/tick";
 
 const SECRET = "s".repeat(40);
-const RESULT: TickResult = { trigger: "scheduled", startedAt: "a", finishedAt: "b", reaped: { count: 0, runIds: [] }, results: [], ok: true, clustering: null };
+const RESULT: TickResult = { trigger: "scheduled", startedAt: "a", finishedAt: "b", reaped: { count: 0, runIds: [] }, results: [], ok: true, clustering: null, ranking: null };
 
 function post(headers: Record<string, string> = {}, body?: unknown, method = "POST") {
   return new Request("http://localhost/api/internal/newsroom/tick", {

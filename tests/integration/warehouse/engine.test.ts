@@ -314,7 +314,7 @@ describe("health from real run history", () => {
     const status = await withVaultSecrets({}, () => getSchedulerStatus(client));
     expect(status).toMatchObject({ pgCronInstalled: true, pgNetInstalled: true, workerConfigured: false });
     expect(status.jobs.map((j) => j.name).sort()).toEqual([
-      "newsroom-cron-history-cleanup", "newsroom-gkg-ingest", "newsroom-newsdata-ingest", "newsroom-reap-stale-clustering-runs", "newsroom-reap-stale-runs", "newsroom-wikipedia-ingest",
+      "newsroom-cron-history-cleanup", "newsroom-gkg-ingest", "newsroom-newsdata-ingest", "newsroom-reap-stale-clustering-runs", "newsroom-reap-stale-ranking-runs", "newsroom-reap-stale-runs", "newsroom-wikipedia-ingest",
     ]);
     expect(JSON.stringify(status)).not.toMatch(/https?:|Bearer|secret/i);
   });

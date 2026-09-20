@@ -240,6 +240,305 @@ export type Database = {
         }
         Relationships: []
       }
+      editorial_events: {
+        Row: {
+          action: string
+          actor: string
+          created_at: string
+          detail: Json
+          editorial_item_id: string
+          id: number
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string
+          created_at?: string
+          detail?: Json
+          editorial_item_id: string
+          id?: never
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string
+          created_at?: string
+          detail?: Json
+          editorial_item_id?: string
+          id?: never
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_events_editorial_item_id_fkey"
+            columns: ["editorial_item_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editorial_items: {
+        Row: {
+          active_overrides: Json
+          algorithm_version: string | null
+          candidate_count: number
+          cluster_confidence: string | null
+          cluster_id: string
+          created_at: string
+          dek: string | null
+          editorial_priority: number
+          editorial_score: number
+          eligibility: string
+          eligibility_reasons: Json
+          entities: string[]
+          event_type: string | null
+          first_published_at: string | null
+          first_seen_at: string | null
+          headline: string | null
+          id: string
+          image_status: string
+          last_published_at: string | null
+          last_ranked_at: string | null
+          last_seen_at: string | null
+          league: string | null
+          provider_count: number
+          rank_position: number | null
+          ranking_run_id: string | null
+          representative_candidate_id: string | null
+          score_parts: Json
+          section: string | null
+          section_eligibility: Json
+          source_count: number
+          sport: string
+          status: string
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          active_overrides?: Json
+          algorithm_version?: string | null
+          candidate_count?: number
+          cluster_confidence?: string | null
+          cluster_id: string
+          created_at?: string
+          dek?: string | null
+          editorial_priority?: number
+          editorial_score?: number
+          eligibility?: string
+          eligibility_reasons?: Json
+          entities?: string[]
+          event_type?: string | null
+          first_published_at?: string | null
+          first_seen_at?: string | null
+          headline?: string | null
+          id?: string
+          image_status?: string
+          last_published_at?: string | null
+          last_ranked_at?: string | null
+          last_seen_at?: string | null
+          league?: string | null
+          provider_count?: number
+          rank_position?: number | null
+          ranking_run_id?: string | null
+          representative_candidate_id?: string | null
+          score_parts?: Json
+          section?: string | null
+          section_eligibility?: Json
+          source_count?: number
+          sport: string
+          status?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          active_overrides?: Json
+          algorithm_version?: string | null
+          candidate_count?: number
+          cluster_confidence?: string | null
+          cluster_id?: string
+          created_at?: string
+          dek?: string | null
+          editorial_priority?: number
+          editorial_score?: number
+          eligibility?: string
+          eligibility_reasons?: Json
+          entities?: string[]
+          event_type?: string | null
+          first_published_at?: string | null
+          first_seen_at?: string | null
+          headline?: string | null
+          id?: string
+          image_status?: string
+          last_published_at?: string | null
+          last_ranked_at?: string | null
+          last_seen_at?: string | null
+          league?: string | null
+          provider_count?: number
+          rank_position?: number | null
+          ranking_run_id?: string | null
+          representative_candidate_id?: string | null
+          score_parts?: Json
+          section?: string | null
+          section_eligibility?: Json
+          source_count?: number
+          sport?: string
+          status?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_items_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: true
+            referencedRelation: "story_cluster_feed"
+            referencedColumns: ["cluster_id"]
+          },
+          {
+            foreignKeyName: "editorial_items_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: true
+            referencedRelation: "story_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_items_ranking_run_id_fkey"
+            columns: ["ranking_run_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_ranking_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_items_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidate_feed"
+            referencedColumns: ["candidate_id"]
+          },
+          {
+            foreignKeyName: "editorial_items_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_items_representative_candidate_id_fkey"
+            columns: ["representative_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "news_unclustered_candidates"
+            referencedColumns: ["candidate_id"]
+          },
+        ]
+      }
+      editorial_overrides: {
+        Row: {
+          amount: number | null
+          created_at: string
+          created_by: string
+          editorial_item_id: string
+          id: number
+          kind: string
+          reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          removed_reason: string | null
+          text_value: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string
+          editorial_item_id: string
+          id?: never
+          kind: string
+          reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          removed_reason?: string | null
+          text_value?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string
+          editorial_item_id?: string
+          id?: never
+          kind?: string
+          reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          removed_reason?: string | null
+          text_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_overrides_editorial_item_id_fkey"
+            columns: ["editorial_item_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editorial_ranking_runs: {
+        Row: {
+          algorithm_version: string
+          clusters_considered: number
+          eligible_count: number
+          error_message: string | null
+          finished_at: string | null
+          held_count: number
+          id: string
+          items_created: number
+          items_updated: number
+          metadata: Json
+          review_count: number
+          sport_filter: string | null
+          started_at: string
+          status: string
+          trigger: string
+          window_label: string | null
+        }
+        Insert: {
+          algorithm_version: string
+          clusters_considered?: number
+          eligible_count?: number
+          error_message?: string | null
+          finished_at?: string | null
+          held_count?: number
+          id?: string
+          items_created?: number
+          items_updated?: number
+          metadata?: Json
+          review_count?: number
+          sport_filter?: string | null
+          started_at?: string
+          status?: string
+          trigger?: string
+          window_label?: string | null
+        }
+        Update: {
+          algorithm_version?: string
+          clusters_considered?: number
+          eligible_count?: number
+          error_message?: string | null
+          finished_at?: string | null
+          held_count?: number
+          id?: string
+          items_created?: number
+          items_updated?: number
+          metadata?: Json
+          review_count?: number
+          sport_filter?: string | null
+          started_at?: string
+          status?: string
+          trigger?: string
+          window_label?: string | null
+        }
+        Relationships: []
+      }
       ingestion_runs: {
         Row: {
           error_message: string | null
@@ -1117,6 +1416,40 @@ export type Database = {
       }
     }
     Functions: {
+      editorial_finish_rank: { Args: { p_run_id: string }; Returns: Json }
+      editorial_remove_override: {
+        Args: {
+          p_actor?: string
+          p_item: string
+          p_kind: string
+          p_reason?: string
+        }
+        Returns: number
+      }
+      editorial_set_override: {
+        Args: {
+          p_actor?: string
+          p_amount?: number
+          p_item: string
+          p_kind: string
+          p_reason?: string
+          p_text?: string
+        }
+        Returns: number
+      }
+      editorial_set_status: {
+        Args: {
+          p_actor?: string
+          p_item: string
+          p_reason?: string
+          p_status: string
+        }
+        Returns: Json
+      }
+      editorial_upsert_items: {
+        Args: { p_items: Json; p_run_id: string }
+        Returns: Json
+      }
       news_cluster_assign: {
         Args: { p_candidate_id: string; p_decision: Json }
         Returns: Json
@@ -1161,6 +1494,10 @@ export type Database = {
         Returns: Json
       }
       news_reap_stale_clustering_runs: {
+        Args: { p_stale_after?: string }
+        Returns: Json
+      }
+      news_reap_stale_ranking_runs: {
         Args: { p_stale_after?: string }
         Returns: Json
       }

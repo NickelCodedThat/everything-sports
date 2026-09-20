@@ -40,7 +40,8 @@ const RULES: Rule[] = [
   // injury
   r("injury", 3, /\brul(?:e|es|ed) out\b|\bout for (?:the )?(?:season|year|weeks?|months?)\b|\btorn\b|\bacl\b|\bsurgery\b|\bplaced on (?:the )?(?:il|ir|injured)\b|\binjured list\b|\bwill miss\b|\bsidelined\b/, "injury-phrase"),
   r("injury", 2, /\binjur(?:y|ies|ed)\b|\bquestionable\b|\bdoubtful\b|\bday-to-day\b|\bconcussion\b|\bfracture[sd]?\b/, "injury-word"),
-  r("injury", 1, /\bhamstring\b|\bknee\b|\bankle\b|\bshoulder\b|\bstrain\b|\bsprain\b|\bachilles\b|\boblique\b|\bgroin\b|\bcalf\b|\bwrist\b|\belbow\b|\bhip\b/, "body-part"),
+  r("injury", 1, /\bhamstring\b|\bknee\b|\bankle\b|\bshoulder\b|\bstrain\b|\bsprain\b|\bachilles\b|\boblique\b|\bgroin\b|\bcalf\b|\bwrist\b|\belbow\b|\bhip\b|\bfoot\b|\bthumb\b|\bquad\b|\brib\b|\bback\b|\bneck\b/, "body-part"),
+  r("injury", 2, /\bout (?:vs\.?|against|for (?:the )?(?:game|season|week|rest))\b/, "out-for-game"),
   // trade / signing / transaction
   r("trade", 3, /\btrades?\b|\btraded\b|\btrading\b|\bdealt\b|\btrade (?:talks|rumors?|request)\b/, "trade-word"),
   r("trade", 2, /\bacquires?\b|\bacquired\b|\bblockbuster deal\b/, "acquire"),
@@ -54,13 +55,14 @@ const RULES: Rule[] = [
   r("discipline", 3, /\bsuspend(?:s|ed)?\b|\bsuspension\b|\bfined\b|\bfines\b|\bejected\b|\barrest(?:ed)?\b|\blawsuit\b|\bsues?\b|\bsued\b|\bbanned\b|\bbans?\b|\bdisciplin\w*/, "discipline-word"),
   r("discipline", 2, /\bcharged\b|\binvestigation\b|\bauthorities\b|\bfacing backlash\b|\bpenalt(?:y|ies)\b/, "legal-word"),
   // coaching
-  r("coaching", 3, /\bfires?\b|\bfired\b|\bhires?\b|\bhired\b|\bparts? ways\b|\bsteps? down\b|\bresigns?\b|\bcoaching (?:change|search|staff)\b|\binterim\b/, "coaching-move"),
+  r("coaching", 3, /\bfires? (?:its |their |the )?(?:head |offensive |defensive |general |interim |new )?(?:coach|manager|coordinator|gm|president|skipper)\b|\bfired\b(?! up)|\bhires?\b|\bhired\b|\bparts? ways\b|\bsteps? down\b|\bresigns?\b|\bcoaching (?:change|search|staff)\b|\binterim (?:head |general )?(?:coach|manager)\b/, "coaching-move"),
   r("coaching", 2, /\bhead coach\b|\bcoordinator\b|\bmanager\b/, "coaching-role"),
   // draft
   r("draft", 3, /\bmock draft\b|\bdraft (?:pick|class|prospect|night|order|stock)\b|\bexpansion draft\b|\bdrafted\b|\bselected (?:no\.|first|second)/, "draft-phrase"),
   r("draft", 2, /\bdraft\b/, "draft-word"),
   // retirement / death
-  r("retirement", 3, /\bretire(?:s|d|ment)?\b/, "retire"),
+  r("retirement", 3, /\b(?:announces?|announced) (?:his |her |their )?retirement\b|\bretire(?:s|d) from\b|\bretiring\b|\bto retire\b|\bretires? after\b|\bhangs? up (?:his|her) (?:boots|cleats|gloves|skates)\b/, "retire"),
+  r("retirement", 1, /\bretirement\b/, "retire-hint"),
   r("death", 3, /\bdies\b|\bdied\b|\bdeath\b|\bpass(?:es|ed) away\b|\bkilled\b|\bmourn(?:s|ing)?\b|\bfuneral\b/, "death-word"),
   // business
   r("business", 3, /\bsale of\b|\bownership\b|\bprivate equity\b|\btv (?:deal|rights)\b|\bbroadcast rights\b|\brelocat\w+|\bcollective bargaining\b|\block-?out\b|\bfranchise value\b|\bvaluation\b/, "business-phrase"),

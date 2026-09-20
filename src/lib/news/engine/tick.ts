@@ -5,6 +5,7 @@ import type { CandidateProvider } from "../providers/types";
 import type { WarehouseClient } from "../warehouse/client";
 import { getLastAttemptAt, getProviderRow, releaseLock, reapStaleRuns, tryAcquireLock } from "../warehouse/engine-db";
 import { runClustering, type ClusterRunReport } from "../clustering/run";
+import { runEditorialRanking, type RankRunReport } from "../editorial-ranking/run";
 import { runWarehouseIngestion, type WarehouseRunReport } from "../warehouse/ingest";
 import { assessSchedulability, ENGINE_PROVIDERS, STALE_RUN_AFTER_MINUTES, type EngineProviderConfig } from "./config";
 
@@ -72,6 +73,23 @@ export interface ClusteringStageSummary {
   durationMs: number;
 }
 
+/**
+ * The ranking stage runs after SUCCESSFUL clustering, in its own try/catch and its own audit
+ * table (editorial_ranking_runs). A ranking failure is reported here and never changes
+ * `TickResult.ok`, an ingestion run, or clustering results.
+ */
+export interface RankingStageSummary {
+  outcome: "ran" | "skipped-locked" | "failed" | "error";
+  detail?: string;
+  runId: string | null;
+  considered: number;
+  eligible: number;
+  held: number;
+  itemsCreated: number;
+  itemsUpdated: number;
+  durationMs: number;
+}
+
 export interface TickResult {
   trigger: TickTrigger;
   startedAt: string;
@@ -82,6 +100,8 @@ export interface TickResult {
   ok: boolean;
   /** Null when the stage did not run (no provider ran this tick, or clustering is not wired in). */
   clustering: ClusteringStageSummary | null;
+  /** Null when ranking did not run (clustering did not succeed, or ranking is not wired in). */
+  ranking: RankingStageSummary | null;
 }
 
 export interface TickDeps {
@@ -96,6 +116,8 @@ export interface TickDeps {
   runIngestion(provider: CandidateProvider, params: { window: string; limit: number; trigger: TickTrigger }): Promise<WarehouseRunReport>;
   /** Optional: absent means the tick does no clustering. */
   runClustering?(params: { trigger: TickTrigger }): Promise<ClusterRunReport>;
+  /** Optional: absent means the tick does no ranking. */
+  runRanking?(params: { trigger: TickTrigger }): Promise<RankRunReport>;
 }
 
 export function createTickDeps(client: WarehouseClient, overrides: Partial<TickDeps> = {}): TickDeps {
@@ -111,6 +133,7 @@ export function createTickDeps(client: WarehouseClient, overrides: Partial<TickD
     resolveProvider: getCandidateProviderById,
     runIngestion: (provider, params) => runWarehouseIngestion(client, { provider, ...params }),
     runClustering: ({ trigger }) => runClustering(client, { trigger, window: "24h" }),
+    runRanking: ({ trigger }) => runEditorialRanking(client, { trigger, window: "24h" }),
     ...overrides,
   };
 }
@@ -234,6 +257,25 @@ async function runClusteringStage(deps: TickDeps, trigger: TickTrigger): Promise
   }
 }
 
+async function runRankingStage(deps: TickDeps, trigger: TickTrigger): Promise<RankingStageSummary> {
+  try {
+    const report = await deps.runRanking!({ trigger });
+    return {
+      outcome: report.status === "skipped-locked" ? "skipped-locked" : report.status === "failed" ? "failed" : "ran",
+      detail: report.errors.length ? trimNote(report.errors[0]) : undefined,
+      runId: report.runId,
+      considered: report.considered,
+      eligible: report.eligible + report.review,
+      held: report.held,
+      itemsCreated: report.itemsCreated,
+      itemsUpdated: report.itemsUpdated,
+      durationMs: report.durationMs,
+    };
+  } catch (error) {
+    return { outcome: "error", detail: trimNote(error instanceof Error ? error.message : String(error)), runId: null, considered: 0, eligible: 0, held: 0, itemsCreated: 0, itemsUpdated: 0, durationMs: 0 };
+  }
+}
+
 export async function runScheduledTick(options: RunScheduledTickOptions): Promise<TickResult> {
   const { deps } = options;
   const trigger = options.trigger ?? "scheduled";
@@ -260,6 +302,8 @@ export async function runScheduledTick(options: RunScheduledTickOptions): Promis
   const ok = results.every((result) => result.outcome !== "error" && !(result.run && result.run.status === "failed"));
   const anyIngested = results.some((result) => result.outcome === "ran" && result.run?.status !== "failed");
   const clustering = anyIngested && deps.runClustering ? await runClusteringStage(deps, trigger) : null;
+  // Ranking only follows clustering that actually ran; each stage has its own failure boundary.
+  const ranking = clustering?.outcome === "ran" && deps.runRanking ? await runRankingStage(deps, trigger) : null;
 
   return {
     trigger,
@@ -269,5 +313,6 @@ export async function runScheduledTick(options: RunScheduledTickOptions): Promis
     results,
     ok,
     clustering,
+    ranking,
   };
 }

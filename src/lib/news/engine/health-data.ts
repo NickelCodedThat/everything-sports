@@ -1,4 +1,5 @@
 import { collectClusteringHealth } from "../clustering/health";
+import { collectEditorialHealth } from "../editorial-ranking/health";
 import type { WarehouseClient } from "../warehouse/client";
 import { getSchedulerStatus } from "../warehouse/engine-db";
 import { assessSchedulability, ENGINE_PROVIDERS, STALE_RUN_AFTER_MINUTES, type EngineProviderConfig } from "./config";
@@ -105,6 +106,8 @@ export async function collectNewsroomHealth(client: WarehouseClient, options: Co
   // Clustering is derived data: if its tables cannot be read, ingestion health must still be reported.
   const clustering = await collectClusteringHealth(client, now).catch(() => null);
 
+  const editorial = await collectEditorialHealth(client, now).catch(() => null);
+
   const scheduler = options.includeScheduler ? await getSchedulerStatus(client).catch(() => null) : null;
 
   return {
@@ -114,10 +117,12 @@ export async function collectNewsroomHealth(client: WarehouseClient, options: Co
     stuckRuns,
     scheduler,
     clustering,
+    editorial,
     alerts: [
       ...providers.flatMap((provider) => provider.alerts),
       ...stuckRunAlerts(stuckRuns),
       ...(clustering?.alerts.map((alert) => ({ ...alert, providerId: null })) ?? []),
+      ...(editorial?.alerts.map((alert) => ({ ...alert, providerId: null })) ?? []),
     ],
   };
 }

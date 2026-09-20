@@ -1,4 +1,5 @@
 import type { ClusteringHealth } from "../clustering/health";
+import type { EditorialHealth } from "../editorial-ranking/health";
 import type { EngineProviderConfig, Schedulability } from "./config";
 import { computeGkgLag, stampFromUnitKey, type GkgLag } from "./gkg-lag";
 
@@ -31,7 +32,9 @@ export type AlertCode =
   | "gkg-file-lag"
   | "stuck-run"
   | "clustering-failed"
-  | "clustering-stale";
+  | "clustering-stale"
+  | "ranking-failed"
+  | "ranking-stale";
 
 export interface Alert {
   code: AlertCode;
@@ -256,6 +259,8 @@ export interface NewsroomHealth {
   scheduler: SchedulerStatus | null;
   /** Minimal clustering health (derived data — its alerts are warnings, never critical). */
   clustering?: ClusteringHealth | null;
+  /** Minimal editorial-ranking health (derived data — warnings only, never affects ingestion health). */
+  editorial?: EditorialHealth | null;
   alerts: Alert[];
 }
 

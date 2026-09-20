@@ -61,6 +61,15 @@ export function formatHealthReport(health: NewsroomHealth): string {
       `  failed runs (24h): ${c.failuresLast24h}`,
     );
   }
+  if (health.editorial) {
+    const e = health.editorial;
+    lines.push(
+      "",
+      "editorial ranking:",
+      `  last successful run: ${e.lastSuccessAt ? `${e.lastSuccessAt.toISOString()} (${e.lastSuccessAgeMinutes}m ago)` : "never"}${e.lastRun ? `   latest run: ${e.lastRun.status}` : ""}`,
+      `  eligible items: ${e.eligibleItems}   held/ineligible items: ${e.heldItems}   approved: ${e.approvedItems}   failed runs (24h): ${e.failuresLast24h}`,
+    );
+  }
   lines.push("", `alerts: ${health.alerts.length}`);
   for (const alert of health.alerts) lines.push(`  [${alert.severity}] ${alert.code}${alert.providerId ? ` (${alert.providerId})` : ""}: ${alert.message}`);
   return lines.join("\n");
@@ -85,6 +94,14 @@ export function formatTickReport(result: TickResult): string {
       `  observations ${r.observations}, sources created ${r.sourcesCreated}, ${r.durationMs}ms`,
     );
     for (const note of r.notes) lines.push(`  note: ${note}`);
+  }
+  if (result.ranking) {
+    const r = result.ranking;
+    lines.push(
+      "",
+      `ranking: ${r.outcome}${r.runId ? ` — run ${r.runId}` : ""}${r.detail ? ` — ${r.detail}` : ""}`,
+      `  considered ${r.considered}, eligible ${r.eligible}, held ${r.held}, items created ${r.itemsCreated} / updated ${r.itemsUpdated}, ${r.durationMs}ms`,
+    );
   }
   if (result.clustering) {
     const c = result.clustering;

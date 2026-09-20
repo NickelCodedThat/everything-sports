@@ -21,7 +21,7 @@ export function makeClient(): WarehouseClient {
 export async function resetWarehouse(): Promise<void> {
   await pool.query(
     `truncate table candidate_ingestion_events, candidate_rejections, news_ingestion_units,
-       news_candidates, ingestion_runs, news_sources, news_providers, newsroom_locks, clustering_runs restart identity cascade`,
+       news_candidates, ingestion_runs, news_sources, news_providers, newsroom_locks, clustering_runs, editorial_ranking_runs restart identity cascade`,
   );
 }
 

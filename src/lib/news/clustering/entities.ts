@@ -48,6 +48,26 @@ const TEAM_TERMS: string[] = [
   ),
 ].sort((a, b) => b.length - a.length);
 
+/** Weak-tier lexicon words that are professional nicknames (the rest of football's weak list is college). */
+const PRO_WEAK = new Set(["Giants", "Jets", "Lions", "Cardinals", "Panthers", "Rangers", "Kings", "Heat", "Magic", "Dream", "Sky", "Fever", "Storm", "Fire", "Liberty", "Wings", "Tempo", "Sun"]);
+
+/** Canonical team keys the lexicon knows as professional franchises. */
+export const PRO_TEAM_KEYS: ReadonlySet<string> = new Set(
+  [
+    ...SPORT_LEXICON.basketball.team,
+    ...SPORT_LEXICON.football.team,
+    ...SPORT_LEXICON.baseball.team,
+    ...Object.values(SPORT_LEXICON).flatMap((lexicon) => lexicon.weak.filter((term) => PRO_WEAK.has(term))),
+  ]
+    .filter(isTeamTerm)
+    .map(canonicalTeam),
+);
+
+/** Canonical team keys the lexicon knows as college programs (football's weak list minus the pro nicknames). */
+export const COLLEGE_TEAM_KEYS: ReadonlySet<string> = new Set(
+  SPORT_LEXICON.football.weak.filter((term) => isTeamTerm(term) && !PRO_WEAK.has(term)).map(canonicalTeam),
+);
+
 const LEAGUE_TERMS = ["NBA", "WNBA", "NFL", "MLB", "FBS", "NCAA", "NHL", "MLS"];
 
 export function canonicalTeam(term: string): string {

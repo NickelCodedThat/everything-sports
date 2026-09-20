@@ -27,6 +27,7 @@ describe("warehouse migrations", () => {
         "candidate_ingestion_events", "candidate_rejections", "ingestion_runs", "news_candidates",
         "news_ingestion_units", "news_providers", "news_sources", "newsroom_locks",
         "clustering_runs", "story_cluster_ambiguities", "story_cluster_members", "story_cluster_merges", "story_clusters",
+        "editorial_events", "editorial_items", "editorial_overrides", "editorial_ranking_runs",
       ].sort(),
     );
   });
